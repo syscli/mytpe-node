@@ -81,6 +81,17 @@ export type {
   PaymentLinkUpdate,
   PaymentLinkListParams,
 } from "./resources/links";
+export type {
+  Form,
+  FormField,
+  FormFieldOption,
+  FormSection,
+  FormCreate,
+  FormUpdate,
+  SectionInput,
+  FieldInput,
+  FormListParams,
+} from "./resources/forms";
 
 export { TERMINAL_LINK_STATUSES } from "./types";
 export type {
