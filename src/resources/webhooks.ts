@@ -40,9 +40,10 @@ export interface WebhookUpdate {
 
 /** An available event type, as listed by `events()`. */
 export interface WebhookEventInfo {
-  event: string;
-  description?: string;
-  [key: string]: unknown;
+  /** The event name to subscribe to, such as `transaction.paid`. */
+  value: string;
+  /** A human label, such as "Transaction Paid". */
+  label: string;
 }
 
 /** One attempt to deliver an event to your URL. */

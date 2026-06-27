@@ -33,7 +33,7 @@ const mytpe = new Mytpe({
 });
 
 const me = await mytpe.me();
-console.log(me.onboarding_status); // e.g. "kyc_approved"
+console.log(me.name, me.email); // confirm the key belongs to the right account
 
 const link = await mytpe.links.create({
   payment_instance_id: instanceId,

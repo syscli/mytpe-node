@@ -98,6 +98,8 @@ export interface Account {
   id: Uuid;
   name?: string;
   email?: string;
+  role?: string;
+  /** Present once onboarding has begun. */
   onboarding_status?: OnboardingStatus;
   created_at?: Timestamp;
   updated_at?: Timestamp;
