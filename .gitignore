@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.npmrc
+
+# Local API test logs may hold the API key, secret, or real account data
+*.log
