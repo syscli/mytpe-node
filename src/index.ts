@@ -75,6 +75,12 @@ export type {
   InstanceUpdate,
   InstanceListParams,
 } from "./resources/instances";
+export type {
+  PaymentLink,
+  PaymentLinkCreate,
+  PaymentLinkUpdate,
+  PaymentLinkListParams,
+} from "./resources/links";
 
 export { TERMINAL_LINK_STATUSES } from "./types";
 export type {
