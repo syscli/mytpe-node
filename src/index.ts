@@ -68,6 +68,13 @@ export type {
   BankAccountUpdate,
   BankAccountListParams,
 } from "./resources/bank-accounts";
+export type {
+  PaymentInstance,
+  InstanceActivation,
+  InstanceActivationInput,
+  InstanceUpdate,
+  InstanceListParams,
+} from "./resources/instances";
 
 export { TERMINAL_LINK_STATUSES } from "./types";
 export type {
