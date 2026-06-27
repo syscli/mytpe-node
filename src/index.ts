@@ -92,6 +92,14 @@ export type {
   FieldInput,
   FormListParams,
 } from "./resources/forms";
+export type {
+  Webhook,
+  WebhookCreate,
+  WebhookUpdate,
+  WebhookEventInfo,
+  WebhookDelivery,
+  WebhookListParams,
+} from "./resources/webhooks";
 
 export { TERMINAL_LINK_STATUSES } from "./types";
 export type {
