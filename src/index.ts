@@ -27,3 +27,15 @@ export type {
   PageLinks,
   PageMeta,
 } from "./http";
+
+export {
+  verifyWebhookSignature,
+  constructWebhookEvent,
+  parseSignatureHeader,
+  WebhookVerificationError,
+} from "./signature";
+export type {
+  WebhookEvent,
+  WebhookEventData,
+  VerifyOptions,
+} from "./signature";
