@@ -1,5 +1,17 @@
-// Public entry point. The client and resources are wired up in later steps.
+// Public entry point.
 export const VERSION = "0.1.0";
+
+export { Mytpe } from "./client";
+export type { MytpeOptions } from "./client";
+
+export { AccountResource } from "./resources/account";
+export { Identifications } from "./resources/identifications";
+export { Brands } from "./resources/brands";
+export { BankAccounts } from "./resources/bank-accounts";
+export { Instances } from "./resources/instances";
+export { PaymentLinks } from "./resources/links";
+export { Forms } from "./resources/forms";
+export { Webhooks } from "./resources/webhooks";
 
 export {
   MytpeError,
