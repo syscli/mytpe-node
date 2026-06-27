@@ -70,9 +70,18 @@ export class Webhooks extends Resource {
     return this.iterate(this.list(params));
   }
 
-  /** Create a webhook. The response includes the signing secret, shown once. */
-  create(input: WebhookCreate, signal?: AbortSignal): Promise<Webhook> {
-    return this.post<Webhook>("webhooks", input, signal);
+  /**
+   * Create a webhook. The signing secret is returned once, so store it now. The
+   * API sends it alongside the webhook rather than inside it, so it is merged
+   * onto the returned object here for convenience.
+   */
+  async create(input: WebhookCreate, signal?: AbortSignal): Promise<Webhook> {
+    const body = await this.http.request<{ data: Webhook; secret?: string }>(
+      "POST",
+      "webhooks",
+      { body: input, signal },
+    );
+    return { ...body.data, secret: body.secret };
   }
 
   /** The event types you can subscribe to. */
@@ -92,13 +101,14 @@ export class Webhooks extends Resource {
     return this.remove(`webhooks/${encodeURIComponent(id)}`, signal);
   }
 
-  /** Rotate the signing secret. The response carries the new secret, shown once. */
-  regenerateSecret(id: Uuid, signal?: AbortSignal): Promise<Webhook> {
-    return this.post<Webhook>(
+  /** Rotate the signing secret and return the new one. Store it; it is shown once. */
+  async regenerateSecret(id: Uuid, signal?: AbortSignal): Promise<string> {
+    const body = await this.http.request<{ secret?: string }>(
+      "POST",
       `webhooks/${encodeURIComponent(id)}/regenerate-secret`,
-      undefined,
-      signal,
+      { signal },
     );
+    return body?.secret ?? "";
   }
 
   /** The delivery attempts for a webhook, newest first. */

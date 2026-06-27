@@ -7,15 +7,24 @@ import { Resource, type Page } from "./base";
 import { FieldIssues } from "../validate";
 import type { FieldDataType, FormStatus, Timestamp, Uuid } from "../types";
 
+/**
+ * Translatable text, keyed by locale, such as `{ fr: "Wilaya", ar: "الولاية" }`.
+ * Field labels and help text are stored this way. Where the SDK accepts a plain
+ * string for convenience, it wraps it as `{ en: "..." }` before sending.
+ */
+export type LocaleText = Record<string, string>;
+
 export interface FormFieldOption {
   value: string;
-  label: string;
+  /** A plain string, or translatable text. */
+  label: string | LocaleText;
 }
 
 export interface FormField {
   id: Uuid;
   form_section_id: Uuid | null;
   input_name: string;
+  /** Resolved to a string on read; written as translatable text. */
   label: string;
   help_text: string | null;
   data_type: FieldDataType;
@@ -60,17 +69,21 @@ export interface FormCreate {
 export type FormUpdate = Partial<FormCreate>;
 
 export interface SectionInput {
-  title: string;
-  description?: string;
+  /** The section title. A plain string is wrapped as `{ en: "..." }` for you. */
+  title: string | LocaleText;
+  /** A plain string is wrapped for you. */
+  description?: string | LocaleText;
   position?: number;
 }
 
 export interface FieldInput {
   input_name: string;
-  label: string;
+  /** The field label. A plain string is wrapped as `{ en: "..." }` for you. */
+  label: string | LocaleText;
   data_type: FieldDataType;
   is_required?: boolean;
-  help_text?: string;
+  /** Help text shown under the field. A plain string is wrapped for you. */
+  help_text?: string | LocaleText;
   validation_rules?: string;
   /** Required for select, multi_select, radio, and checkbox fields. */
   options?: FormFieldOption[];
@@ -100,6 +113,34 @@ function validateField(input: FieldInput): void {
     issues.add("options", `is required for ${input.data_type} fields`);
   }
   issues.throwIfAny();
+}
+
+function toLocaleText(value: string | LocaleText): LocaleText {
+  return typeof value === "string" ? { en: value } : value;
+}
+
+/** Sections store title and description as translatable maps; wrap plain strings. */
+function sectionPayload(input: SectionInput): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    ...input,
+    title: toLocaleText(input.title),
+  };
+  if (input.description !== undefined) {
+    payload.description = toLocaleText(input.description);
+  }
+  return payload;
+}
+
+/** The API stores label and help text as translatable maps; wrap plain strings. */
+function fieldPayload(input: FieldInput): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    ...input,
+    label: toLocaleText(input.label),
+  };
+  if (input.help_text !== undefined) {
+    payload.help_text = toLocaleText(input.help_text);
+  }
+  return payload;
 }
 
 export class Forms extends Resource {
@@ -133,7 +174,11 @@ export class Forms extends Resource {
   }
 
   addSection(id: Uuid, input: SectionInput, signal?: AbortSignal): Promise<FormSection> {
-    return this.post<FormSection>(`forms/${encodeURIComponent(id)}/sections`, input, signal);
+    return this.post<FormSection>(
+      `forms/${encodeURIComponent(id)}/sections`,
+      sectionPayload(input),
+      signal,
+    );
   }
 
   updateSection(
@@ -144,7 +189,7 @@ export class Forms extends Resource {
   ): Promise<FormSection> {
     return this.patch<FormSection>(
       `forms/${encodeURIComponent(id)}/sections/${encodeURIComponent(sectionId)}`,
-      input,
+      sectionPayload(input),
       signal,
     );
   }
@@ -158,7 +203,11 @@ export class Forms extends Resource {
 
   async addField(id: Uuid, input: FieldInput, signal?: AbortSignal): Promise<FormField> {
     validateField(input);
-    return this.post<FormField>(`forms/${encodeURIComponent(id)}/fields`, input, signal);
+    return this.post<FormField>(
+      `forms/${encodeURIComponent(id)}/fields`,
+      fieldPayload(input),
+      signal,
+    );
   }
 
   async updateField(
@@ -170,7 +219,7 @@ export class Forms extends Resource {
     validateField(input);
     return this.patch<FormField>(
       `forms/${encodeURIComponent(id)}/fields/${encodeURIComponent(fieldId)}`,
-      input,
+      fieldPayload(input),
       signal,
     );
   }

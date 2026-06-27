@@ -23,7 +23,8 @@ function http(fetchImpl: FetchLike) {
 }
 
 describe("Webhooks", () => {
-  it("creates a webhook and exposes the one-time secret", async () => {
+  it("creates a webhook and merges the top-level one-time secret", async () => {
+    // The API returns the secret alongside data, not inside it.
     const fetchImpl = vi.fn(async () =>
       jsonResponse(
         {
@@ -32,8 +33,8 @@ describe("Webhooks", () => {
             url: "https://shop.test/hook",
             events: ["transaction.paid"],
             is_active: true,
-            secret: "whsec_123",
           },
+          secret: "whsec_123",
         },
         201,
       ),
@@ -42,7 +43,14 @@ describe("Webhooks", () => {
       url: "https://shop.test/hook",
       events: ["transaction.paid"],
     });
+    expect(webhook.id).toBe("w1");
     expect(webhook.secret).toBe("whsec_123");
+  });
+
+  it("returns just the new secret from regenerateSecret", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ secret: "whsec_new" }));
+    const secret = await new Webhooks(http(fetchImpl)).regenerateSecret("w1");
+    expect(secret).toBe("whsec_new");
   });
 
   it("deletes via a 204", async () => {

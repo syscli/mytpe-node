@@ -103,6 +103,7 @@ export type {
   SectionInput,
   FieldInput,
   FormListParams,
+  LocaleText,
 } from "./resources/forms";
 export type {
   Webhook,

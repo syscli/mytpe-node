@@ -5,16 +5,14 @@
 // raised client-side, before a request leaves.
 
 /**
- * Machine-readable error codes. The API's own codes (`error` field) are kept
- * verbatim. `validation` and `network` are the two the client adds itself.
+ * Machine-readable error codes. The API returns its own codes, such as
+ * `VALIDATION_ERROR`, `INVALID_API_CREDENTIALS`, or `WEBHOOK_NOT_FOUND`, and they
+ * are kept verbatim. `network` is the one code the client adds itself, for a
+ * request that never reached the server.
  */
 export type MytpeErrorCode =
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  | "NOT_FOUND"
-  | "BUSINESS_ERROR"
-  | "SERVICE_UNAVAILABLE"
-  | "validation"
+  | "VALIDATION_ERROR"
+  | "INVALID_API_CREDENTIALS"
   | "network"
   | (string & {});
 
@@ -77,6 +75,8 @@ export type FieldErrors = Record<string, string[]>;
 
 export interface ValidationErrorOptions extends MytpeErrorOptions {
   fieldErrors?: FieldErrors;
+  /** The API code on a server 422; defaults to `validation` for client checks. */
+  code?: MytpeErrorCode;
 }
 
 /**
@@ -87,7 +87,7 @@ export class ValidationError extends MytpeError {
   readonly fieldErrors: FieldErrors;
 
   constructor(message: string, options: ValidationErrorOptions = {}) {
-    super(message, "validation", options);
+    super(message, options.code ?? "validation", options);
     this.fieldErrors = options.fieldErrors ?? {};
   }
 
@@ -97,44 +97,66 @@ export class ValidationError extends MytpeError {
   }
 }
 
-interface ErrorBody {
-  error?: string;
-  message?: string;
-  errors?: FieldErrors;
+/** One entry in the API's JSON:API style `errors` array. */
+interface ApiError {
+  status?: string;
+  code?: string;
+  title?: string;
+  detail?: string | null;
+  meta?: unknown;
 }
 
-function readErrorBody(body: unknown): ErrorBody {
+function readErrors(body: unknown): ApiError[] {
   if (body && typeof body === "object") {
-    const b = body as ErrorBody;
-    return {
-      error: typeof b.error === "string" ? b.error : undefined,
-      message: typeof b.message === "string" ? b.message : undefined,
-      errors:
-        b.errors && typeof b.errors === "object" ? b.errors : undefined,
-    };
+    const list = (body as { errors?: unknown }).errors;
+    if (Array.isArray(list)) return list as ApiError[];
   }
-  return {};
+  return [];
+}
+
+/** Pull the field-to-messages map out of the error metas, on a 422. */
+function readFieldErrors(errors: ApiError[]): FieldErrors {
+  const out: FieldErrors = {};
+  for (const error of errors) {
+    const meta = error.meta;
+    if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+      for (const [field, messages] of Object.entries(meta)) {
+        out[field] = Array.isArray(messages)
+          ? messages.map((m) => String(m))
+          : [String(messages)];
+      }
+    }
+  }
+  return out;
 }
 
 /**
- * Build the right error from a failed response. A 422 becomes a ValidationError
- * with its field map; the rest map from the status, keeping the API's `error`
- * code where it sent one so `error.code` matches the documentation.
+ * Build the right error from a failed response. The API answers with a JSON:API
+ * `errors` array; the first entry gives the message and code, and on a 422 the
+ * entries' `meta` holds the field map. The code is passed through verbatim.
  */
 export function errorFromResponse(status: number, body: unknown): MytpeError {
-  const { error, message, errors } = readErrorBody(body);
-  const text = message ?? `Request failed with status ${status}.`;
+  const errors = readErrors(body);
+  const first = errors[0] ?? {};
+  const code = typeof first.code === "string" ? first.code : undefined;
+  const text =
+    first.title || first.detail || `Request failed with status ${status}.`;
   const options: MytpeErrorOptions = { status, body };
 
   if (status === 422) {
-    return new ValidationError(text, { ...options, fieldErrors: errors ?? {} });
+    return new ValidationError(text, {
+      ...options,
+      code: code ?? "VALIDATION_ERROR",
+      fieldErrors: readFieldErrors(errors),
+    });
   }
-  if (status === 401) return new AuthError(text, error ?? "UNAUTHORIZED", options);
-  if (status === 403) return new ForbiddenError(text, error ?? "FORBIDDEN", options);
-  if (status === 404) return new NotFoundError(text, error ?? "NOT_FOUND", options);
+  if (status === 401) {
+    return new AuthError(text, code ?? "INVALID_API_CREDENTIALS", options);
+  }
+  if (status === 403) return new ForbiddenError(text, code ?? "FORBIDDEN", options);
+  if (status === 404) return new NotFoundError(text, code ?? "NOT_FOUND", options);
   if (status >= 500) {
-    return new ServiceError(text, error ?? "SERVICE_UNAVAILABLE", options);
+    return new ServiceError(text, code ?? "SERVICE_UNAVAILABLE", options);
   }
-  if (error === "BUSINESS_ERROR") return new BusinessError(text, error, options);
-  return new RequestError(text, error ?? "BUSINESS_ERROR", options);
+  return new RequestError(text, code ?? "BUSINESS_ERROR", options);
 }

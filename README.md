@@ -157,6 +157,17 @@ await mytpe.forms.addField(form.id, {
 await mytpe.forms.publish(form.id);
 ```
 
+Section titles and field labels are translatable. Pass a plain string and the
+client wraps it for you, or pass a locale map to set more than one language:
+
+```ts
+await mytpe.forms.addField(form.id, {
+  input_name: "wilaya",
+  label: { fr: "Wilaya", ar: "الولاية" },
+  data_type: "string",
+});
+```
+
 ## Webhooks
 
 Create a subscription and store the `secret` it returns once. Then verify each

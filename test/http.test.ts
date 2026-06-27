@@ -86,9 +86,20 @@ describe("HttpClient.request", () => {
 
   it("throws a typed error from a failed response", async () => {
     const fetchImpl = vi.fn(async () =>
-      jsonResponse({ error: "UNAUTHORIZED", message: "Invalid API credentials." }, {
-        status: 401,
-      }),
+      jsonResponse(
+        {
+          errors: [
+            {
+              status: "401",
+              code: "INVALID_API_CREDENTIALS",
+              title: "Invalid API credentials.",
+              detail: null,
+              meta: [],
+            },
+          ],
+        },
+        { status: 401 },
+      ),
     );
     await expect(client(fetchImpl).request("GET", "me")).rejects.toBeInstanceOf(
       AuthError,
@@ -98,7 +109,16 @@ describe("HttpClient.request", () => {
   it("surfaces a 422 as a ValidationError with the field map", async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse(
-        { message: "invalid", errors: { amount: ["required"] } },
+        {
+          errors: [
+            {
+              status: "422",
+              code: "VALIDATION_ERROR",
+              title: "Validation failed",
+              meta: { amount: ["required"] },
+            },
+          ],
+        },
         { status: 422 },
       ),
     );
