@@ -42,6 +42,33 @@ export type {
 
 export type { Page } from "./resources/base";
 
+export { fileFromPath, buildFormData } from "./upload";
+export type { FileInput } from "./upload";
+
+export { FieldIssues, isRib } from "./validate";
+
+export type {
+  Identification,
+  EstablishmentType,
+  AuthorizationType,
+  Activity,
+  IdentificationCreate,
+  IdentificationUpdate,
+  IdentificationListParams,
+} from "./resources/identifications";
+export type {
+  Brand,
+  BrandCreate,
+  BrandUpdate,
+  BrandListParams,
+} from "./resources/brands";
+export type {
+  BankAccount,
+  BankAccountCreate,
+  BankAccountUpdate,
+  BankAccountListParams,
+} from "./resources/bank-accounts";
+
 export { TERMINAL_LINK_STATUSES } from "./types";
 export type {
   Money,
