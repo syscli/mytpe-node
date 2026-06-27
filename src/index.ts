@@ -39,3 +39,26 @@ export type {
   WebhookEventData,
   VerifyOptions,
 } from "./signature";
+
+export type { Page } from "./resources/base";
+
+export { TERMINAL_LINK_STATUSES } from "./types";
+export type {
+  Money,
+  Uuid,
+  Timestamp,
+  KycStatus,
+  OnboardingStatus,
+  InstanceAcceptanceStatus,
+  InstanceStatus,
+  LinkStatus,
+  AmountMode,
+  UsageMode,
+  TransactionStatus,
+  PaymentMethod,
+  ConfirmationStatus,
+  GatewayType,
+  FormStatus,
+  FieldDataType,
+  Account,
+} from "./types";
