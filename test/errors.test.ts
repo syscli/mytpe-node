@@ -81,5 +81,6 @@ describe("ValidationError", () => {
       fieldErrors: { account_number: ["must be 20 digits"] },
     });
     expect(err.messages).toEqual(["must be 20 digits"]);
+    expect(err.code).toBe("VALIDATION_ERROR");
   });
 });

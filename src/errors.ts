@@ -100,7 +100,7 @@ export type FieldErrors = Record<string, string[]>;
 
 export interface ValidationErrorOptions extends MytpeErrorOptions {
   fieldErrors?: FieldErrors;
-  /** The API code on a server 422; defaults to `validation` for client checks. */
+  /** The API code on a server 422; client checks use `VALIDATION_ERROR` too. */
   code?: MytpeErrorCode;
 }
 
@@ -112,7 +112,7 @@ export class ValidationError extends MytpeError {
   readonly fieldErrors: FieldErrors;
 
   constructor(message: string, options: ValidationErrorOptions = {}) {
-    super(message, options.code ?? "validation", options);
+    super(message, options.code ?? "VALIDATION_ERROR", options);
     this.fieldErrors = options.fieldErrors ?? {};
   }
 
