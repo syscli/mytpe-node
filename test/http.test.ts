@@ -150,6 +150,20 @@ describe("HttpClient.request", () => {
     expect(postFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("times out a response whose body stalls", async () => {
+    const stalled = vi.fn<FetchLike>(async (_url, init) => {
+      const stream = new ReadableStream({
+        start(c) {
+          init!.signal!.addEventListener("abort", () => c.error(new Error("aborted")));
+        },
+      });
+      return new Response(stream, { status: 200 });
+    });
+    await expect(
+      client(stalled, { timeoutMs: 20, retry: { attempts: 1 } }).request("GET", "me"),
+    ).rejects.toBeInstanceOf(NetworkError);
+  });
+
   it("wraps a transport failure as NetworkError", async () => {
     const boom = vi.fn<FetchLike>().mockRejectedValue(new Error("ECONNRESET"));
     await expect(

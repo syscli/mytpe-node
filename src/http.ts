@@ -157,7 +157,9 @@ export class HttpClient {
         });
     }
 
+    // The timeout covers the body read too, so a stalled stream cannot hang.
     let response: Response;
+    let text: string;
     try {
       response = await this.#config.fetch(target, {
         method,
@@ -165,6 +167,7 @@ export class HttpClient {
         body: this.encodeBody(options.body),
         signal: controller.signal,
       });
+      text = await response.text();
     } catch (cause) {
       if (options.signal?.aborted) throw cause;
       const reason = cause instanceof Error ? cause.message : "request failed";
@@ -173,7 +176,6 @@ export class HttpClient {
       if (timer) clearTimeout(timer);
     }
 
-    const text = await response.text();
     let body: unknown;
     try {
       body = text ? JSON.parse(text) : undefined;
