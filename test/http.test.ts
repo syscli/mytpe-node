@@ -185,6 +185,14 @@ describe("HttpClient.request", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  it("removes its abort listener from a long-lived signal", async () => {
+    const controller = new AbortController();
+    const remove = vi.spyOn(controller.signal, "removeEventListener");
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }));
+    await client(fetchImpl).request("GET", "me", { signal: controller.signal });
+    expect(remove).toHaveBeenCalledWith("abort", expect.any(Function));
+  });
+
   it("wraps a transport failure as NetworkError", async () => {
     const boom = vi.fn<FetchLike>().mockRejectedValue(new Error("ECONNRESET"));
     await expect(

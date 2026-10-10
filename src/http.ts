@@ -159,13 +159,9 @@ export class HttpClient {
             controller.abort();
           }, this.#config.timeoutMs)
         : undefined;
-    if (options.signal) {
-      if (options.signal.aborted) controller.abort();
-      else
-        options.signal.addEventListener("abort", () => controller.abort(), {
-          once: true,
-        });
-    }
+    const onAbort = (): void => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    else options.signal?.addEventListener("abort", onAbort, { once: true });
 
     // The timeout covers the body read too, so a stalled stream cannot hang.
     let response: Response;
@@ -192,6 +188,7 @@ export class HttpClient {
       throw new NetworkError(`Could not reach the API: ${reason}.`, { cause });
     } finally {
       if (timer) clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onAbort);
     }
 
     let body: unknown;
