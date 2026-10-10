@@ -54,7 +54,7 @@ export class ForbiddenError extends MytpeError {}
 /** 404. No resource with that id belongs to this account. */
 export class NotFoundError extends MytpeError {}
 
-/** A rule the API enforces that is not a field-level validation problem. */
+/** 400 or 409. A rule the API enforces that is not a field-level problem. */
 export class BusinessError extends MytpeError {}
 
 /** 500 or 503. The API is unavailable or erroring; safe to retry a read later. */
@@ -67,7 +67,7 @@ export class NetworkError extends MytpeError {
   }
 }
 
-/** Any other 4xx the client does not model on its own. */
+/** Any other 4xx, such as a 429, that the client does not model on its own. */
 export class RequestError extends MytpeError {}
 
 /** A field error map: field name to the messages for that field. */
@@ -158,5 +158,9 @@ export function errorFromResponse(status: number, body: unknown): MytpeError {
   if (status >= 500) {
     return new ServiceError(text, code ?? "SERVICE_UNAVAILABLE", options);
   }
-  return new RequestError(text, code ?? "BUSINESS_ERROR", options);
+  if (status === 400 || status === 409) {
+    return new BusinessError(text, code ?? "BUSINESS_ERROR", options);
+  }
+  if (status === 429) return new RequestError(text, code ?? "RATE_LIMITED", options);
+  return new RequestError(text, code ?? "REQUEST_ERROR", options);
 }

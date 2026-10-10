@@ -3,6 +3,8 @@ import {
   errorFromResponse,
   AuthError,
   NotFoundError,
+  BusinessError,
+  RequestError,
   ServiceError,
   ValidationError,
   MytpeError,
@@ -53,6 +55,16 @@ describe("errorFromResponse", () => {
     expect(
       errorFromResponse(503, apiError("503", "SERVICE_UNAVAILABLE", "down")),
     ).toBeInstanceOf(ServiceError);
+  });
+
+  it("maps 400 and 409 to a BusinessError and other 4xx to a RequestError", () => {
+    const conflict = errorFromResponse(409, apiError("409", "LINK_NOT_ACTIVE", "Not active"));
+    expect(conflict).toBeInstanceOf(BusinessError);
+    expect(conflict.code).toBe("LINK_NOT_ACTIVE");
+    expect(errorFromResponse(400, undefined)).toBeInstanceOf(BusinessError);
+    const limited = errorFromResponse(429, undefined);
+    expect(limited).toBeInstanceOf(RequestError);
+    expect(limited.code).toBe("RATE_LIMITED");
   });
 
   it("falls back cleanly when there is no body", () => {
