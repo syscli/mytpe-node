@@ -91,3 +91,22 @@ describe("PaymentLinks actions", () => {
     expect(message).toBe("Payment link archived.");
   });
 });
+
+describe("path ids", () => {
+  it("rejects ids that would change the route", async () => {
+    const fetchImpl = vi.fn(ok);
+    const links = new PaymentLinks(http(fetchImpl));
+    for (const id of ["", ".", ".."]) {
+      await expect(links.get(id)).rejects.toBeInstanceOf(ValidationError);
+    }
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("encodes an id as a single segment", async () => {
+    const fetchImpl = vi.fn(ok);
+    await new PaymentLinks(http(fetchImpl)).get("a/../b?x");
+    expect(fetchImpl.mock.calls[0]![0]).toBe(
+      "https://api.mytpe.app/api/ext/links/a%2F..%2Fb%3Fx",
+    );
+  });
+});

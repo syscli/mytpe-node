@@ -1,7 +1,7 @@
 // Brands: the customer-facing identity (name, logo) tied to an identification.
 // A brand carries its own KYC review, since the logo and document are checked.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { buildFormData, type FileInput } from "../upload";
 import type { Identification } from "./identifications";
 import type { KycStatus, Timestamp, Uuid } from "../types";
@@ -61,15 +61,15 @@ export class Brands extends Resource {
     return this.post<Brand>("brands", toForm(input), signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<Brand> {
-    return this.getData<Brand>(`brands/${encodeURIComponent(id)}`, undefined, signal);
+  async get(id: Uuid, signal?: AbortSignal): Promise<Brand> {
+    return this.getData<Brand>(`brands/${segment(id)}`, undefined, signal);
   }
 
-  update(id: Uuid, input: BrandUpdate, signal?: AbortSignal): Promise<Brand> {
-    return this.put<Brand>(`brands/${encodeURIComponent(id)}`, toForm(input), signal);
+  async update(id: Uuid, input: BrandUpdate, signal?: AbortSignal): Promise<Brand> {
+    return this.put<Brand>(`brands/${segment(id)}`, toForm(input), signal);
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`brands/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`brands/${segment(id)}`, signal);
   }
 }

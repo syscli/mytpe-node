@@ -3,7 +3,7 @@
 // attached to a link. Sections and fields are managed through their own nested
 // endpoints. Selection fields need options, which is checked before sending.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { FieldIssues } from "../validate";
 import type { FieldDataType, FormStatus, Timestamp, Uuid } from "../types";
 
@@ -156,47 +156,47 @@ export class Forms extends Resource {
     return this.post<Form>("forms", input, signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<Form> {
-    return this.getData<Form>(`forms/${encodeURIComponent(id)}`, undefined, signal);
+  async get(id: Uuid, signal?: AbortSignal): Promise<Form> {
+    return this.getData<Form>(`forms/${segment(id)}`, undefined, signal);
   }
 
-  update(id: Uuid, input: FormUpdate, signal?: AbortSignal): Promise<Form> {
-    return this.patch<Form>(`forms/${encodeURIComponent(id)}`, input, signal);
+  async update(id: Uuid, input: FormUpdate, signal?: AbortSignal): Promise<Form> {
+    return this.patch<Form>(`forms/${segment(id)}`, input, signal);
   }
 
   /** Publish a draft form so it can be attached to links. */
-  publish(id: Uuid, signal?: AbortSignal): Promise<Form> {
-    return this.post<Form>(`forms/${encodeURIComponent(id)}/publish`, undefined, signal);
+  async publish(id: Uuid, signal?: AbortSignal): Promise<Form> {
+    return this.post<Form>(`forms/${segment(id)}/publish`, undefined, signal);
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`forms/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`forms/${segment(id)}`, signal);
   }
 
-  addSection(id: Uuid, input: SectionInput, signal?: AbortSignal): Promise<FormSection> {
+  async addSection(id: Uuid, input: SectionInput, signal?: AbortSignal): Promise<FormSection> {
     return this.post<FormSection>(
-      `forms/${encodeURIComponent(id)}/sections`,
+      `forms/${segment(id)}/sections`,
       sectionPayload(input),
       signal,
     );
   }
 
-  updateSection(
+  async updateSection(
     id: Uuid,
     sectionId: Uuid,
     input: SectionInput,
     signal?: AbortSignal,
   ): Promise<FormSection> {
     return this.patch<FormSection>(
-      `forms/${encodeURIComponent(id)}/sections/${encodeURIComponent(sectionId)}`,
+      `forms/${segment(id)}/sections/${segment(sectionId)}`,
       sectionPayload(input),
       signal,
     );
   }
 
-  deleteSection(id: Uuid, sectionId: Uuid, signal?: AbortSignal): Promise<void> {
+  async deleteSection(id: Uuid, sectionId: Uuid, signal?: AbortSignal): Promise<void> {
     return this.remove(
-      `forms/${encodeURIComponent(id)}/sections/${encodeURIComponent(sectionId)}`,
+      `forms/${segment(id)}/sections/${segment(sectionId)}`,
       signal,
     );
   }
@@ -204,7 +204,7 @@ export class Forms extends Resource {
   async addField(id: Uuid, input: FieldInput, signal?: AbortSignal): Promise<FormField> {
     validateField(input);
     return this.post<FormField>(
-      `forms/${encodeURIComponent(id)}/fields`,
+      `forms/${segment(id)}/fields`,
       fieldPayload(input),
       signal,
     );
@@ -218,15 +218,15 @@ export class Forms extends Resource {
   ): Promise<FormField> {
     validateField(input);
     return this.patch<FormField>(
-      `forms/${encodeURIComponent(id)}/fields/${encodeURIComponent(fieldId)}`,
+      `forms/${segment(id)}/fields/${segment(fieldId)}`,
       fieldPayload(input),
       signal,
     );
   }
 
-  deleteField(id: Uuid, fieldId: Uuid, signal?: AbortSignal): Promise<void> {
+  async deleteField(id: Uuid, fieldId: Uuid, signal?: AbortSignal): Promise<void> {
     return this.remove(
-      `forms/${encodeURIComponent(id)}/fields/${encodeURIComponent(fieldId)}`,
+      `forms/${segment(id)}/fields/${segment(fieldId)}`,
       signal,
     );
   }

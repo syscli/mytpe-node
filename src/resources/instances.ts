@@ -3,7 +3,7 @@
 // brand, and bank account, and returns a transaction for the SATIM licence fee
 // (pay it at `form_url`). Once the licence is approved the instance turns ready.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { buildFormData, type FileInput } from "../upload";
 import type { Identification } from "./identifications";
 import type { Brand } from "./brands";
@@ -98,28 +98,28 @@ export class Instances extends Resource {
     );
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<PaymentInstance> {
+  async get(id: Uuid, signal?: AbortSignal): Promise<PaymentInstance> {
     return this.getData<PaymentInstance>(
-      `instances/${encodeURIComponent(id)}`,
+      `instances/${segment(id)}`,
       undefined,
       signal,
     );
   }
 
-  update(
+  async update(
     id: Uuid,
     input: InstanceUpdate,
     signal?: AbortSignal,
   ): Promise<PaymentInstance> {
     const { logo, ...fields } = input;
     return this.put<PaymentInstance>(
-      `instances/${encodeURIComponent(id)}`,
+      `instances/${segment(id)}`,
       buildFormData(fields, { logo }),
       signal,
     );
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`instances/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`instances/${segment(id)}`, signal);
   }
 }

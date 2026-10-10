@@ -2,7 +2,7 @@
 // first link in the onboarding chain. A brand and a bank account both reference
 // one, and a payment instance needs all three before it can accept payments.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { buildFormData, type FileInput } from "../upload";
 import type { KycStatus, Timestamp, Uuid } from "../types";
 
@@ -76,27 +76,27 @@ export class Identifications extends Resource {
     return this.post<Identification>("identifications", toForm(input), signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<Identification> {
+  async get(id: Uuid, signal?: AbortSignal): Promise<Identification> {
     return this.getData<Identification>(
-      `identifications/${encodeURIComponent(id)}`,
+      `identifications/${segment(id)}`,
       undefined,
       signal,
     );
   }
 
-  update(
+  async update(
     id: Uuid,
     input: IdentificationUpdate,
     signal?: AbortSignal,
   ): Promise<Identification> {
     return this.put<Identification>(
-      `identifications/${encodeURIComponent(id)}`,
+      `identifications/${segment(id)}`,
       toForm(input),
       signal,
     );
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`identifications/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`identifications/${segment(id)}`, signal);
   }
 }

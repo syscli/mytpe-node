@@ -4,6 +4,7 @@
 // you can step through or iterate.
 
 import type { HttpClient, QueryParams, PageLinks, PageMeta } from "../http";
+import { ValidationError } from "../errors";
 
 /** One page of a list, with a `next()` that fetches the page after it. */
 export interface Page<T> {
@@ -25,6 +26,16 @@ const EMPTY_META: PageMeta = {
 };
 
 const EMPTY_LINKS: PageLinks = { first: null, last: null, prev: null, next: null };
+
+/** Encode an id as one path segment, refusing values that would change the route. */
+export function segment(id: string): string {
+  if (typeof id !== "string" || id === "" || id === "." || id === "..") {
+    throw new ValidationError(`Invalid id: ${JSON.stringify(id)}.`, {
+      fieldErrors: { id: ["must be a non-empty id"] },
+    });
+  }
+  return encodeURIComponent(id);
+}
 
 export abstract class Resource {
   constructor(protected readonly http: HttpClient) {}

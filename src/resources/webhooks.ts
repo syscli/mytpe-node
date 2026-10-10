@@ -3,7 +3,7 @@
 // The resource also exposes `constructEvent`, which verifies an incoming request
 // and parses it, so the verification helper is reachable from the client too.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import {
   constructWebhookEvent,
   verifyWebhookSignature,
@@ -89,43 +89,43 @@ export class Webhooks extends Resource {
     return this.getData<WebhookEventInfo[]>("webhooks/events", undefined, signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<Webhook> {
-    return this.getData<Webhook>(`webhooks/${encodeURIComponent(id)}`, undefined, signal);
+  async get(id: Uuid, signal?: AbortSignal): Promise<Webhook> {
+    return this.getData<Webhook>(`webhooks/${segment(id)}`, undefined, signal);
   }
 
-  update(id: Uuid, input: WebhookUpdate, signal?: AbortSignal): Promise<Webhook> {
-    return this.patch<Webhook>(`webhooks/${encodeURIComponent(id)}`, input, signal);
+  async update(id: Uuid, input: WebhookUpdate, signal?: AbortSignal): Promise<Webhook> {
+    return this.patch<Webhook>(`webhooks/${segment(id)}`, input, signal);
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`webhooks/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`webhooks/${segment(id)}`, signal);
   }
 
   /** Rotate the signing secret and return the new one. Store it; it is shown once. */
   async regenerateSecret(id: Uuid, signal?: AbortSignal): Promise<string> {
     const body = await this.http.request<{ secret?: string }>(
       "POST",
-      `webhooks/${encodeURIComponent(id)}/regenerate-secret`,
+      `webhooks/${segment(id)}/regenerate-secret`,
       { signal },
     );
     return body?.secret ?? "";
   }
 
   /** The delivery attempts for a webhook, newest first. */
-  deliveries(
+  async deliveries(
     id: Uuid,
     params: WebhookListParams = {},
   ): Promise<Page<WebhookDelivery>> {
     return this.fetchPage<WebhookDelivery>(
-      `webhooks/${encodeURIComponent(id)}/deliveries`,
+      `webhooks/${segment(id)}/deliveries`,
       { ...params },
     );
   }
 
   /** Retry a past delivery. Returns the API's confirmation message. */
-  redeliver(id: Uuid, deliveryId: Uuid, signal?: AbortSignal): Promise<string> {
+  async redeliver(id: Uuid, deliveryId: Uuid, signal?: AbortSignal): Promise<string> {
     return this.action(
-      `webhooks/${encodeURIComponent(id)}/deliveries/${encodeURIComponent(deliveryId)}/redeliver`,
+      `webhooks/${segment(id)}/deliveries/${segment(deliveryId)}/redeliver`,
       "POST",
       signal,
     );

@@ -4,7 +4,7 @@
 // here before the request leaves, so a mistake comes back as a field error
 // without a round trip. A link moves through publish, pause, resume, and archive.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { FieldIssues } from "../validate";
 import type {
   AmountMode,
@@ -128,31 +128,31 @@ export class PaymentLinks extends Resource {
     return this.post<PaymentLink>("links", input, signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
-    return this.getData<PaymentLink>(`links/${encodeURIComponent(id)}`, undefined, signal);
+  async get(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
+    return this.getData<PaymentLink>(`links/${segment(id)}`, undefined, signal);
   }
 
-  update(id: Uuid, input: PaymentLinkUpdate, signal?: AbortSignal): Promise<PaymentLink> {
-    return this.put<PaymentLink>(`links/${encodeURIComponent(id)}`, input, signal);
+  async update(id: Uuid, input: PaymentLinkUpdate, signal?: AbortSignal): Promise<PaymentLink> {
+    return this.put<PaymentLink>(`links/${segment(id)}`, input, signal);
   }
 
   /** Publish a draft link so it can take payments. */
-  publish(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
-    return this.post<PaymentLink>(`links/${encodeURIComponent(id)}/publish`, undefined, signal);
+  async publish(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
+    return this.post<PaymentLink>(`links/${segment(id)}/publish`, undefined, signal);
   }
 
   /** Pause an active link. */
-  pause(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
-    return this.post<PaymentLink>(`links/${encodeURIComponent(id)}/pause`, undefined, signal);
+  async pause(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
+    return this.post<PaymentLink>(`links/${segment(id)}/pause`, undefined, signal);
   }
 
   /** Resume a paused link. */
-  resume(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
-    return this.post<PaymentLink>(`links/${encodeURIComponent(id)}/resume`, undefined, signal);
+  async resume(id: Uuid, signal?: AbortSignal): Promise<PaymentLink> {
+    return this.post<PaymentLink>(`links/${segment(id)}/resume`, undefined, signal);
   }
 
   /** Archive a link for good. Returns the API's confirmation message. */
-  archive(id: Uuid, signal?: AbortSignal): Promise<string> {
-    return this.action(`links/${encodeURIComponent(id)}/archive`, "POST", signal);
+  async archive(id: Uuid, signal?: AbortSignal): Promise<string> {
+    return this.action(`links/${segment(id)}/archive`, "POST", signal);
   }
 }

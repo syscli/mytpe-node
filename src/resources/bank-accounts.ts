@@ -2,7 +2,7 @@
 // identification. It must be reviewed and accepted before it can back a payment
 // instance, and it cannot be deleted while an instance depends on it.
 
-import { Resource, type Page } from "./base";
+import { Resource, segment, type Page } from "./base";
 import { FieldIssues, isRib } from "../validate";
 import type { Identification } from "./identifications";
 import type { KycStatus, Timestamp, Uuid } from "../types";
@@ -57,9 +57,9 @@ export class BankAccounts extends Resource {
     return this.post<BankAccount>("bank-accounts", input, signal);
   }
 
-  get(id: Uuid, signal?: AbortSignal): Promise<BankAccount> {
+  async get(id: Uuid, signal?: AbortSignal): Promise<BankAccount> {
     return this.getData<BankAccount>(
-      `bank-accounts/${encodeURIComponent(id)}`,
+      `bank-accounts/${segment(id)}`,
       undefined,
       signal,
     );
@@ -72,13 +72,13 @@ export class BankAccounts extends Resource {
   ): Promise<BankAccount> {
     validate(input);
     return this.put<BankAccount>(
-      `bank-accounts/${encodeURIComponent(id)}`,
+      `bank-accounts/${segment(id)}`,
       input,
       signal,
     );
   }
 
-  delete(id: Uuid, signal?: AbortSignal): Promise<void> {
-    return this.remove(`bank-accounts/${encodeURIComponent(id)}`, signal);
+  async delete(id: Uuid, signal?: AbortSignal): Promise<void> {
+    return this.remove(`bank-accounts/${segment(id)}`, signal);
   }
 }
