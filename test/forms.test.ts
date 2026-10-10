@@ -24,12 +24,12 @@ function http(fetchImpl: FetchLike) {
 
 describe("Forms", () => {
   it("creates a form and a section", async () => {
-    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+    const fetchImpl = vi.fn<FetchLike>(async (url) => {
       if (String(url).endsWith("/sections")) {
         return jsonResponse({ data: { id: "s1", form_id: "f1", title: "Delivery" } }, 201);
       }
       return jsonResponse({ data: { id: "f1", name: "Checkout", status: "draft" } }, 201);
-    }) as unknown as FetchLike;
+    });
 
     const forms = new Forms(http(fetchImpl));
     const form = await forms.create({ name: "Checkout" });
@@ -40,7 +40,7 @@ describe("Forms", () => {
   });
 
   it("requires options on a select field", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }, 201));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: {} }, 201));
     await expect(
       new Forms(http(fetchImpl)).addField("f1", {
         input_name: "size",
@@ -52,7 +52,7 @@ describe("Forms", () => {
   });
 
   it("adds a valid select field with options", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "fld1", input_name: "size", data_type: "select" } }, 201),
     );
     const field = await new Forms(http(fetchImpl)).addField("f1", {
@@ -65,7 +65,7 @@ describe("Forms", () => {
   });
 
   it("patches a form via PATCH", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "f1", name: "Renamed", status: "draft" } }),
     );
     await new Forms(http(fetchImpl)).update("f1", { name: "Renamed" });
@@ -75,7 +75,7 @@ describe("Forms", () => {
 
 describe("Forms partial updates", () => {
   it("patches only the fields given on a field update", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "fd1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "fd1" } }));
     await new Forms(http(fetchImpl)).updateField("f1", "fd1", { is_required: false });
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe("https://api.mytpe.app/api/ext/forms/f1/fields/fd1");
@@ -84,7 +84,7 @@ describe("Forms partial updates", () => {
   });
 
   it("still rejects an empty option list on update", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: {} }));
     await expect(
       new Forms(http(fetchImpl)).updateField("f1", "fd1", {
         data_type: "select",
@@ -95,7 +95,7 @@ describe("Forms partial updates", () => {
   });
 
   it("wraps a section title on a partial section update", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "s1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "s1" } }));
     await new Forms(http(fetchImpl)).updateSection("f1", "s1", { title: "Adresse" });
     const init = fetchImpl.mock.calls[0]![1]!;
     expect(init.body).toBe(JSON.stringify({ title: { en: "Adresse" } }));

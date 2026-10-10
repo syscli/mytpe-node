@@ -33,7 +33,7 @@ describe("Mytpe", () => {
   });
 
   it("sends both auth headers to the v-ext base on a real call", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "t1", name: "Boutique Batna" } }),
     );
     const client = new Mytpe({ key: "mtk_x", secret: "mts_y", fetch: fetchImpl });

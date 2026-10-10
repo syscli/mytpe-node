@@ -25,7 +25,7 @@ function http(fetchImpl: FetchLike) {
 describe("Webhooks", () => {
   it("creates a webhook and merges the top-level one-time secret", async () => {
     // The API returns the secret alongside data, not inside it.
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse(
         {
           data: {
@@ -48,20 +48,20 @@ describe("Webhooks", () => {
   });
 
   it("returns just the new secret from regenerateSecret", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ secret: "whsec_new" }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ secret: "whsec_new" }));
     const secret = await new Webhooks(http(fetchImpl)).regenerateSecret("w1");
     expect(secret).toBe("whsec_new");
   });
 
   it("throws when regenerateSecret gets no secret back", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ message: "ok" }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ message: "ok" }));
     await expect(
       new Webhooks(http(fetchImpl)).regenerateSecret("w1"),
     ).rejects.toMatchObject({ code: "MISSING_SECRET" });
   });
 
   it("deletes via a 204", async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
+    const fetchImpl = vi.fn<FetchLike>(async () => new Response(null, { status: 204 }));
     await expect(new Webhooks(http(fetchImpl)).delete("w1")).resolves.toBeUndefined();
     expect(fetchImpl.mock.calls[0]![1]!.method).toBe("DELETE");
   });

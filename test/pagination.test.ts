@@ -51,7 +51,7 @@ function listBody(page: number, lastPage: number, ids: string[]) {
 
 describe("AccountResource", () => {
   it("reads the trader from me", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "t1", name: "Boutique Batna" } }),
     );
     const me = await new AccountResource(http(fetchImpl)).me();
@@ -62,7 +62,7 @@ describe("AccountResource", () => {
 
 describe("pagination", () => {
   it("reports paging flags from meta", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse(listBody(1, 3, ["a", "b"])));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(listBody(1, 3, ["a", "b"])));
     const page = await new Things(http(fetchImpl)).list();
     expect(page.data).toHaveLength(2);
     expect(page.meta.total).toBe(6);
@@ -74,10 +74,10 @@ describe("pagination", () => {
       "1": listBody(1, 2, ["a", "b"]),
       "2": listBody(2, 2, ["c"]),
     };
-    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+    const fetchImpl = vi.fn<FetchLike>(async (url) => {
       const page = new URL(String(url)).searchParams.get("page") ?? "1";
       return jsonResponse(pages[page]);
-    }) as unknown as FetchLike;
+    });
 
     const seen: string[] = [];
     for await (const thing of new Things(http(fetchImpl)).all()) seen.push(thing.id);

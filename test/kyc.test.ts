@@ -47,7 +47,7 @@ describe("buildFormData", () => {
 
 describe("Identifications", () => {
   it("posts multipart and returns the created identification", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "id1", name: "Boutique Batna", status: "pending" } }, 201),
     );
     const created = await new Identifications(http(fetchImpl)).create({
@@ -66,7 +66,7 @@ describe("Identifications", () => {
 
 describe("BankAccounts", () => {
   it("rejects a non-20-digit RIB before sending", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: {} }));
     await expect(
       new BankAccounts(http(fetchImpl)).create({
         account_number: "12345",
@@ -77,7 +77,7 @@ describe("BankAccounts", () => {
   });
 
   it("sends a valid RIB as JSON", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "b1", account_number: "0".repeat(20), status: "pending" } }, 201),
     );
     const created = await new BankAccounts(http(fetchImpl)).create({
@@ -93,7 +93,7 @@ describe("BankAccounts", () => {
 
 describe("multipart updates", () => {
   it("sends an identification update as POST with a PUT override", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "id1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "id1" } }));
     await new Identifications(http(fetchImpl)).update("id1", { name: "Renamed" });
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe("https://api.mytpe.app/api/ext/identifications/id1");
@@ -104,7 +104,7 @@ describe("multipart updates", () => {
   });
 
   it("sends a brand update as POST with a PUT override", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "br1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "br1" } }));
     await new Brands(http(fetchImpl)).update("br1", {
       logo: new Blob([new Uint8Array([1])], { type: "image/png" }),
     });
@@ -115,7 +115,7 @@ describe("multipart updates", () => {
   });
 
   it("keeps a JSON update on PUT", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "b1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "b1" } }));
     await new BankAccounts(http(fetchImpl)).update("b1", { identification_id: "id2" });
     const init = fetchImpl.mock.calls[0]![1]!;
     expect(init.method).toBe("PUT");

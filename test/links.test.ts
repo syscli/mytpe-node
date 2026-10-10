@@ -22,11 +22,11 @@ function http(fetchImpl: FetchLike) {
   return new HttpClient(config);
 }
 
-const ok = () => jsonResponse({ data: { id: "l1", status: "draft" } }, 201);
+const ok = async () => jsonResponse({ data: { id: "l1", status: "draft" } }, 201);
 
 describe("PaymentLinks.create validation", () => {
   it("requires an amount for a fixed link", async () => {
-    const fetchImpl = vi.fn(ok);
+    const fetchImpl = vi.fn<FetchLike>(ok);
     await expect(
       new PaymentLinks(http(fetchImpl)).create({
         payment_instance_id: "in1",
@@ -39,7 +39,7 @@ describe("PaymentLinks.create validation", () => {
   });
 
   it("collects every conditional miss at once", async () => {
-    const fetchImpl = vi.fn(ok);
+    const fetchImpl = vi.fn<FetchLike>(ok);
     await new PaymentLinks(http(fetchImpl))
       .create({
         payment_instance_id: "in1",
@@ -58,7 +58,7 @@ describe("PaymentLinks.create validation", () => {
   });
 
   it("sends a valid fixed reusable link", async () => {
-    const fetchImpl = vi.fn(ok);
+    const fetchImpl = vi.fn<FetchLike>(ok);
     const link = await new PaymentLinks(http(fetchImpl)).create({
       payment_instance_id: "in1",
       title: "Order 1043",
@@ -73,7 +73,7 @@ describe("PaymentLinks.create validation", () => {
 
 describe("PaymentLinks actions", () => {
   it("publishes and returns the link", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ data: { id: "l1", slug: "abc", status: "active" } }),
     );
     const link = await new PaymentLinks(http(fetchImpl)).publish("l1");
@@ -84,7 +84,7 @@ describe("PaymentLinks actions", () => {
   });
 
   it("archives and returns the message", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({ message: "Payment link archived." }),
     );
     const message = await new PaymentLinks(http(fetchImpl)).archive("l1");
@@ -94,7 +94,7 @@ describe("PaymentLinks actions", () => {
 
 describe("path ids", () => {
   it("rejects ids that would change the route", async () => {
-    const fetchImpl = vi.fn(ok);
+    const fetchImpl = vi.fn<FetchLike>(ok);
     const links = new PaymentLinks(http(fetchImpl));
     for (const id of ["", ".", ".."]) {
       await expect(links.get(id)).rejects.toBeInstanceOf(ValidationError);
@@ -103,7 +103,7 @@ describe("path ids", () => {
   });
 
   it("encodes an id as a single segment", async () => {
-    const fetchImpl = vi.fn(ok);
+    const fetchImpl = vi.fn<FetchLike>(ok);
     await new PaymentLinks(http(fetchImpl)).get("a/../b?x");
     expect(fetchImpl.mock.calls[0]![0]).toBe(
       "https://api.mytpe.app/api/ext/links/a%2F..%2Fb%3Fx",

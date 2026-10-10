@@ -76,7 +76,7 @@ describe("buildHeaders", () => {
 
 describe("HttpClient.request", () => {
   it("builds the URL with the /api/ext prefix and both headers", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "u1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "u1" } }));
     const body = await client(fetchImpl).request<{ data: { id: string } }>(
       "GET",
       "me",
@@ -90,7 +90,7 @@ describe("HttpClient.request", () => {
   });
 
   it("sends a FormData body untouched", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }, { status: 201 }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: {} }, { status: 201 }));
     const form = new FormData();
     form.set("name", "Boutique");
     await client(fetchImpl).request("POST", "identifications", { body: form });
@@ -98,7 +98,7 @@ describe("HttpClient.request", () => {
   });
 
   it("throws a typed error from a failed response", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse(
         {
           errors: [
@@ -120,7 +120,7 @@ describe("HttpClient.request", () => {
   });
 
   it("surfaces a 422 as a ValidationError with the field map", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse(
         {
           errors: [
@@ -141,7 +141,7 @@ describe("HttpClient.request", () => {
   });
 
   it("returns undefined for a 204 No Content", async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
+    const fetchImpl = vi.fn<FetchLike>(async () => new Response(null, { status: 204 }));
     const out = await client(fetchImpl).request("DELETE", "webhooks/w1");
     expect(out).toBeUndefined();
   });
@@ -195,7 +195,7 @@ describe("HttpClient.request", () => {
   it("removes its abort listener from a long-lived signal", async () => {
     const controller = new AbortController();
     const remove = vi.spyOn(controller.signal, "removeEventListener");
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: {} }));
     await client(fetchImpl).request("GET", "me", { signal: controller.signal });
     expect(remove).toHaveBeenCalledWith("abort", expect.any(Function));
   });

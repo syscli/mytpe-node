@@ -23,7 +23,7 @@ function http(fetchImpl: FetchLike) {
 
 describe("Instances", () => {
   it("requests activation and returns the licence-fee transaction", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse(
         {
           data: {
@@ -51,7 +51,7 @@ describe("Instances", () => {
   });
 
   it("retrieves an instance with its nested KYC objects", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<FetchLike>(async () =>
       jsonResponse({
         data: {
           id: "in1",
@@ -73,7 +73,7 @@ describe("Instances", () => {
 
 describe("Instances.update", () => {
   it("sends a multipart update as POST with a PUT override", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "in1" } }));
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ data: { id: "in1" } }));
     await new Instances(http(fetchImpl)).update("in1", { title: "Caisse 2" });
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe("https://api.mytpe.app/api/ext/instances/in1");
