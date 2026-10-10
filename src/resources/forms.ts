@@ -92,6 +92,10 @@ export interface FieldInput {
   meta?: Record<string, unknown>;
 }
 
+export type SectionUpdate = Partial<SectionInput>;
+
+export type FieldUpdate = Partial<FieldInput>;
+
 export interface FormListParams {
   page?: number;
   per_page?: number;
@@ -104,12 +108,12 @@ const NEEDS_OPTIONS: readonly FieldDataType[] = [
   "checkbox",
 ];
 
-function validateField(input: FieldInput): void {
+/** On create a selection field must carry options; on update, not an empty list. */
+function validateField(input: FieldUpdate, creating: boolean): void {
   const issues = new FieldIssues();
-  if (
-    NEEDS_OPTIONS.includes(input.data_type) &&
-    (!input.options || input.options.length === 0)
-  ) {
+  const missing =
+    input.options === undefined ? creating : input.options.length === 0;
+  if (input.data_type && NEEDS_OPTIONS.includes(input.data_type) && missing) {
     issues.add("options", `is required for ${input.data_type} fields`);
   }
   issues.throwIfAny();
@@ -120,11 +124,9 @@ function toLocaleText(value: string | LocaleText): LocaleText {
 }
 
 /** Sections store title and description as translatable maps; wrap plain strings. */
-function sectionPayload(input: SectionInput): Record<string, unknown> {
-  const payload: Record<string, unknown> = {
-    ...input,
-    title: toLocaleText(input.title),
-  };
+function sectionPayload(input: SectionUpdate): Record<string, unknown> {
+  const payload: Record<string, unknown> = { ...input };
+  if (input.title !== undefined) payload.title = toLocaleText(input.title);
   if (input.description !== undefined) {
     payload.description = toLocaleText(input.description);
   }
@@ -132,11 +134,9 @@ function sectionPayload(input: SectionInput): Record<string, unknown> {
 }
 
 /** The API stores label and help text as translatable maps; wrap plain strings. */
-function fieldPayload(input: FieldInput): Record<string, unknown> {
-  const payload: Record<string, unknown> = {
-    ...input,
-    label: toLocaleText(input.label),
-  };
+function fieldPayload(input: FieldUpdate): Record<string, unknown> {
+  const payload: Record<string, unknown> = { ...input };
+  if (input.label !== undefined) payload.label = toLocaleText(input.label);
   if (input.help_text !== undefined) {
     payload.help_text = toLocaleText(input.help_text);
   }
@@ -188,7 +188,7 @@ export class Forms extends Resource {
   async updateSection(
     id: Uuid,
     sectionId: Uuid,
-    input: SectionInput,
+    input: SectionUpdate,
     signal?: AbortSignal,
   ): Promise<FormSection> {
     return this.patch<FormSection>(
@@ -210,7 +210,7 @@ export class Forms extends Resource {
     input: FieldInput,
     signal?: AbortSignal,
   ): Promise<FormField> {
-    validateField(input);
+    validateField(input, true);
     return this.post<FormField>(
       `forms/${segment(id)}/fields`,
       fieldPayload(input),
@@ -221,10 +221,10 @@ export class Forms extends Resource {
   async updateField(
     id: Uuid,
     fieldId: Uuid,
-    input: FieldInput,
+    input: FieldUpdate,
     signal?: AbortSignal,
   ): Promise<FormField> {
-    validateField(input);
+    validateField(input, false);
     return this.patch<FormField>(
       `forms/${segment(id)}/fields/${segment(fieldId)}`,
       fieldPayload(input),

@@ -72,3 +72,32 @@ describe("Forms", () => {
     expect(fetchImpl.mock.calls[0]![1]!.method).toBe("PATCH");
   });
 });
+
+describe("Forms partial updates", () => {
+  it("patches only the fields given on a field update", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "fd1" } }));
+    await new Forms(http(fetchImpl)).updateField("f1", "fd1", { is_required: false });
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe("https://api.mytpe.app/api/ext/forms/f1/fields/fd1");
+    expect(init!.method).toBe("PATCH");
+    expect(init!.body).toBe(JSON.stringify({ is_required: false }));
+  });
+
+  it("still rejects an empty option list on update", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: {} }));
+    await expect(
+      new Forms(http(fetchImpl)).updateField("f1", "fd1", {
+        data_type: "select",
+        options: [],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("wraps a section title on a partial section update", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "s1" } }));
+    await new Forms(http(fetchImpl)).updateSection("f1", "s1", { title: "Adresse" });
+    const init = fetchImpl.mock.calls[0]![1]!;
+    expect(init.body).toBe(JSON.stringify({ title: { en: "Adresse" } }));
+  });
+});

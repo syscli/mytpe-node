@@ -103,7 +103,9 @@ export type {
   FormCreate,
   FormUpdate,
   SectionInput,
+  SectionUpdate,
   FieldInput,
+  FieldUpdate,
   FormListParams,
   LocaleText,
 } from "./resources/forms";
