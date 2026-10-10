@@ -52,6 +52,7 @@ export type {
   WebhookEvent,
   WebhookEventData,
   VerifyOptions,
+  SignatureHeader,
 } from "./signature";
 
 export type { Page } from "./resources/base";

@@ -92,3 +92,12 @@ describe("constructWebhookEvent", () => {
     ).toThrow(WebhookVerificationError);
   });
 });
+
+describe("header shapes", () => {
+  const t = Math.floor(NOW / 1000);
+
+  it("takes the first value of a repeated header and rejects a missing one", () => {
+    expect(verifyWebhookSignature(body, [sign(body, t)], SECRET, { now: NOW })).toBe(true);
+    expect(verifyWebhookSignature(body, undefined, SECRET, { now: NOW })).toBe(false);
+  });
+});

@@ -7,6 +7,7 @@ import { Resource, segment, type Page } from "./base";
 import {
   constructWebhookEvent,
   verifyWebhookSignature,
+  type SignatureHeader,
   type VerifyOptions,
   type WebhookEvent,
 } from "../signature";
@@ -150,7 +151,7 @@ export class Webhooks extends Resource {
    */
   verify(
     rawBody: string,
-    signatureHeader: string,
+    signatureHeader: SignatureHeader,
     secret: string,
     options?: VerifyOptions,
   ): boolean {
@@ -163,7 +164,7 @@ export class Webhooks extends Resource {
    */
   constructEvent(
     rawBody: string,
-    signatureHeader: string,
+    signatureHeader: SignatureHeader,
     secret: string,
     options?: VerifyOptions,
   ): WebhookEvent {

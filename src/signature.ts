@@ -48,8 +48,17 @@ interface ParsedSignature {
   signatures: string[];
 }
 
-/** Pull the timestamp and v1 hash out of the signature header. */
-export function parseSignatureHeader(header: string): ParsedSignature | null {
+/**
+ * The signature header as Node hands it over: a string, a repeated header as an
+ * array (the first is used), or undefined when it is missing.
+ */
+export type SignatureHeader = string | string[] | undefined;
+
+/** Pull the timestamp and v1 hashes out of the signature header. */
+export function parseSignatureHeader(
+  input: SignatureHeader,
+): ParsedSignature | null {
+  const header = Array.isArray(input) ? input[0] : input;
   if (typeof header !== "string") return null;
   let t: number | undefined;
   const signatures: string[] = [];
@@ -80,7 +89,7 @@ function safeEqualHex(a: string, b: string): boolean {
  */
 export function verifyWebhookSignature(
   rawBody: string,
-  header: string,
+  header: SignatureHeader,
   secret: string,
   options: VerifyOptions = {},
 ): boolean {
@@ -112,7 +121,7 @@ export function verifyWebhookSignature(
  */
 export function constructWebhookEvent(
   rawBody: string,
-  header: string,
+  header: SignatureHeader,
   secret: string,
   options: VerifyOptions = {},
 ): WebhookEvent {
