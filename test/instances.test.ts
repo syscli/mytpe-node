@@ -70,3 +70,15 @@ describe("Instances", () => {
     );
   });
 });
+
+describe("Instances.update", () => {
+  it("sends a multipart update as POST with a PUT override", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "in1" } }));
+    await new Instances(http(fetchImpl)).update("in1", { title: "Caisse 2" });
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe("https://api.mytpe.app/api/ext/instances/in1");
+    expect(init!.method).toBe("POST");
+    expect((init!.body as FormData).get("_method")).toBe("PUT");
+    expect((init!.body as FormData).get("title")).toBe("Caisse 2");
+  });
+});

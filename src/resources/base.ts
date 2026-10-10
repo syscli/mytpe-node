@@ -43,8 +43,15 @@ export abstract class Resource {
     return this.unwrap<T>("POST", path, { body, signal });
   }
 
-  /** PUT a body and return the updated resource's `data`. */
+  /**
+   * PUT a body and return the updated resource's `data`. PHP does not parse a
+   * multipart body on PUT, so a FormData goes as POST with a `_method` override.
+   */
   protected put<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+    if (typeof FormData !== "undefined" && body instanceof FormData) {
+      body.set("_method", "PUT");
+      return this.unwrap<T>("POST", path, { body, signal });
+    }
     return this.unwrap<T>("PUT", path, { body, signal });
   }
 

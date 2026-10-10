@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { HttpClient, type FetchLike, type HttpClientConfig } from "../src/http";
 import { Identifications } from "../src/resources/identifications";
 import { BankAccounts } from "../src/resources/bank-accounts";
+import { Brands } from "../src/resources/brands";
 import { buildFormData } from "../src/upload";
 import { ValidationError } from "../src/errors";
 
@@ -87,5 +88,37 @@ describe("BankAccounts", () => {
     expect(fetchImpl.mock.calls[0]![1]!.body).toBe(
       JSON.stringify({ account_number: "0".repeat(20), identification_id: "id1" }),
     );
+  });
+});
+
+describe("multipart updates", () => {
+  it("sends an identification update as POST with a PUT override", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "id1" } }));
+    await new Identifications(http(fetchImpl)).update("id1", { name: "Renamed" });
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe("https://api.mytpe.app/api/ext/identifications/id1");
+    expect(init!.method).toBe("POST");
+    const form = init!.body as FormData;
+    expect(form.get("_method")).toBe("PUT");
+    expect(form.get("name")).toBe("Renamed");
+  });
+
+  it("sends a brand update as POST with a PUT override", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "br1" } }));
+    await new Brands(http(fetchImpl)).update("br1", {
+      logo: new Blob([new Uint8Array([1])], { type: "image/png" }),
+    });
+    const init = fetchImpl.mock.calls[0]![1]!;
+    expect(init.method).toBe("POST");
+    expect((init.body as FormData).get("_method")).toBe("PUT");
+    expect((init.body as FormData).get("logo")).toBeInstanceOf(Blob);
+  });
+
+  it("keeps a JSON update on PUT", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { id: "b1" } }));
+    await new BankAccounts(http(fetchImpl)).update("b1", { identification_id: "id2" });
+    const init = fetchImpl.mock.calls[0]![1]!;
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({ identification_id: "id2" }));
   });
 });
