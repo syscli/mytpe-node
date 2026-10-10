@@ -23,6 +23,8 @@ export interface MytpeErrorOptions {
   /** The full parsed response body, kept so callers can read everything. */
   body?: unknown;
   cause?: unknown;
+  /** Seconds from a Retry-After header, when the API sent one. */
+  retryAfter?: number;
 }
 
 export class MytpeError extends Error {
@@ -30,6 +32,8 @@ export class MytpeError extends Error {
   readonly status?: number;
   readonly code: MytpeErrorCode;
   readonly body: unknown;
+  /** Seconds the API asked to wait before retrying, from Retry-After. */
+  readonly retryAfter?: number;
 
   constructor(
     message: string,
@@ -44,6 +48,7 @@ export class MytpeError extends Error {
     this.code = code;
     this.status = options.status;
     this.body = options.body;
+    this.retryAfter = options.retryAfter;
   }
 }
 
@@ -155,13 +160,17 @@ function readFieldErrors(errors: ApiError[]): FieldErrors {
  * `errors` array; the first entry gives the message and code, and on a 422 the
  * entries' `meta` holds the field map. The code is passed through verbatim.
  */
-export function errorFromResponse(status: number, body: unknown): MytpeError {
+export function errorFromResponse(
+  status: number,
+  body: unknown,
+  retryAfter?: number,
+): MytpeError {
   const errors = readErrors(body);
   const first = errors[0] ?? {};
   const code = typeof first.code === "string" ? first.code : undefined;
   const text =
     first.title || first.detail || `Request failed with status ${status}.`;
-  const options: MytpeErrorOptions = { status, body };
+  const options: MytpeErrorOptions = { status, body, retryAfter };
 
   if (status === 422) {
     return new ValidationError(text, {

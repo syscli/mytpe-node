@@ -6,6 +6,7 @@
 import {
   AbortError,
   errorFromResponse,
+  MytpeError,
   NetworkError,
   ServiceError,
   TimeoutError,
@@ -59,8 +60,52 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+/** The longest Retry-After the client will honour before retrying. */
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/** Wait between attempts, giving up early if the caller aborts. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      reject(new AbortError("The request was aborted.", { cause: signal?.reason }));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    if (signal?.aborted) onAbort();
+    else signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/** Seconds from a Retry-After header, sent as seconds or as an HTTP date. */
+export function parseRetryAfter(
+  value: string | null,
+  now: number = Date.now(),
+): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds);
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? undefined : Math.max(0, (date - now) / 1000);
+}
+
+/**
+ * Milliseconds to wait before the next attempt: the API's Retry-After when it
+ * sent one, capped at a minute, or else an exponential backoff with jitter.
+ */
+export function retryDelay(
+  attempt: number,
+  retryAfter?: number,
+  random: () => number = Math.random,
+): number {
+  if (retryAfter !== undefined) {
+    return Math.min(retryAfter * 1000, MAX_RETRY_AFTER_MS);
+  }
+  const base = Math.min(2 ** (attempt - 1) * 500, 10_000);
+  return base / 2 + random() * (base / 2);
+}
 
 /**
  * Turn a params object into a query string, including the leading `?`. Drops
@@ -117,8 +162,8 @@ export class HttpClient {
 
   /**
    * Send a request and return the parsed body. Retries are narrow and read-only:
-   * a 5xx or a dropped connection is retried for GET, since a write that timed
-   * out may have gone through and a blind resend could double it.
+   * a 5xx, a 429, or a dropped connection is retried for GET, since a write that
+   * timed out may have gone through and a blind resend could double it.
    */
   async request<T>(
     method: HttpMethod,
@@ -134,9 +179,12 @@ export class HttpClient {
       } catch (error) {
         const retryable =
           idempotent &&
-          (error instanceof ServiceError || error instanceof NetworkError);
+          (error instanceof ServiceError ||
+            error instanceof NetworkError ||
+            (error instanceof MytpeError && error.status === 429));
         if (attempt >= maxAttempts || !retryable) throw error;
-        await sleep(Math.min(2 ** (attempt - 1) * 500, 10_000));
+        const retryAfter = error instanceof MytpeError ? error.retryAfter : undefined;
+        await sleep(retryDelay(attempt, retryAfter), options.signal);
       }
     }
   }
@@ -198,7 +246,13 @@ export class HttpClient {
       body = text;
     }
 
-    if (!response.ok) throw errorFromResponse(response.status, body);
+    if (!response.ok) {
+      throw errorFromResponse(
+        response.status,
+        body,
+        parseRetryAfter(response.headers.get("retry-after")),
+      );
+    }
 
     // 204 No Content and other empty bodies come back as undefined.
     return body as T;

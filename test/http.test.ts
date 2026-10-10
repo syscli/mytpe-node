@@ -3,6 +3,8 @@ import {
   HttpClient,
   encodeQuery,
   buildHeaders,
+  parseRetryAfter,
+  retryDelay,
   type FetchLike,
   type HttpClientConfig,
 } from "../src/http";
@@ -10,6 +12,7 @@ import {
   AbortError,
   AuthError,
   NetworkError,
+  RequestError,
   ServiceError,
   TimeoutError,
 } from "../src/errors";
@@ -198,5 +201,57 @@ describe("HttpClient.request", () => {
     await expect(
       client(boom).request("POST", "links", { body: {} }),
     ).rejects.toBeInstanceOf(NetworkError);
+  });
+});
+
+describe("retry timing", () => {
+  it("parses Retry-After as seconds or an HTTP date", () => {
+    expect(parseRetryAfter("7")).toBe(7);
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter("soon")).toBeUndefined();
+    const now = Date.parse("2026-06-09T12:00:00Z");
+    expect(parseRetryAfter("Tue, 09 Jun 2026 12:00:30 GMT", now)).toBe(30);
+  });
+
+  it("honours Retry-After up to a minute and jitters the backoff", () => {
+    expect(retryDelay(1, 2)).toBe(2000);
+    expect(retryDelay(1, 3600)).toBe(60_000);
+    expect(retryDelay(1, undefined, () => 0)).toBe(250);
+    expect(retryDelay(1, undefined, () => 1)).toBe(500);
+    expect(retryDelay(10, undefined, () => 1)).toBe(10_000);
+  });
+
+  it("retries a 429 for GET but not for POST", async () => {
+    const limited = () =>
+      jsonResponse(undefined, { status: 429, headers: { "retry-after": "0" } });
+
+    const getFetch = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(limited())
+      .mockResolvedValueOnce(jsonResponse({ data: {} }));
+    await client(getFetch).request("GET", "links");
+    expect(getFetch).toHaveBeenCalledTimes(2);
+
+    const postFetch = vi.fn<FetchLike>().mockResolvedValue(limited());
+    const error = await client(postFetch)
+      .request("POST", "links", { body: {} })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RequestError);
+    expect((error as RequestError).retryAfter).toBe(0);
+    expect(postFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops waiting between attempts when the caller aborts", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<FetchLike>(async () => {
+      setTimeout(() => controller.abort(), 10);
+      return jsonResponse(undefined, { status: 503, headers: { "retry-after": "30" } });
+    });
+    const started = Date.now();
+    await expect(
+      client(fetchImpl).request("GET", "me", { signal: controller.signal }),
+    ).rejects.toBeInstanceOf(AbortError);
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
