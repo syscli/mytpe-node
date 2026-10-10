@@ -96,12 +96,12 @@ export function buildHeaders(
 }
 
 export class HttpClient {
-  private readonly config: HttpClientConfig;
+  readonly #config: HttpClientConfig;
 
   constructor(config: HttpClientConfig) {
     // new URL() drops the last path segment of a base without a trailing slash,
     // which would delete the `/api/ext` prefix. Pin the slash.
-    this.config = {
+    this.#config = {
       ...config,
       baseUrl: config.baseUrl.endsWith("/")
         ? config.baseUrl
@@ -119,7 +119,7 @@ export class HttpClient {
     path: string,
     options: RequestOptions = {},
   ): Promise<T> {
-    const maxAttempts = Math.max(1, this.config.retry.attempts);
+    const maxAttempts = Math.max(1, this.#config.retry.attempts);
     const idempotent = method === "GET";
 
     for (let attempt = 1; ; attempt++) {
@@ -140,14 +140,14 @@ export class HttpClient {
     path: string,
     options: RequestOptions,
   ): Promise<T> {
-    const url = new URL(path, this.config.baseUrl);
+    const url = new URL(path, this.#config.baseUrl);
     const target = `${url.toString()}${encodeQuery(options.query)}`;
-    const headers = buildHeaders(this.config, options.body);
+    const headers = buildHeaders(this.#config, options.body);
 
     const controller = new AbortController();
     const timer =
-      this.config.timeoutMs > 0
-        ? setTimeout(() => controller.abort(), this.config.timeoutMs)
+      this.#config.timeoutMs > 0
+        ? setTimeout(() => controller.abort(), this.#config.timeoutMs)
         : undefined;
     if (options.signal) {
       if (options.signal.aborted) controller.abort();
@@ -159,7 +159,7 @@ export class HttpClient {
 
     let response: Response;
     try {
-      response = await this.config.fetch(target, {
+      response = await this.#config.fetch(target, {
         method,
         headers,
         body: this.encodeBody(options.body),

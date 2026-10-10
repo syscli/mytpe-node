@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { inspect } from "node:util";
 import { Mytpe } from "../src/client";
 import type { FetchLike } from "../src/http";
 
@@ -44,5 +45,13 @@ describe("Mytpe", () => {
     const headers = init?.headers as Record<string, string>;
     expect(headers["X-Api-Key"]).toBe("mtk_x");
     expect(headers["X-Api-Secret"]).toBe("mts_y");
+  });
+
+  it("keeps the key and secret out of inspect and JSON output", () => {
+    const client = new Mytpe({ key: "mtk_live_k", secret: "mts_live_s" });
+    const shown =
+      inspect(client, { depth: 10, showHidden: true }) + JSON.stringify(client);
+    expect(shown).not.toContain("mtk_live_k");
+    expect(shown).not.toContain("mts_live_s");
   });
 });
