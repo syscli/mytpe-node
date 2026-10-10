@@ -106,12 +106,13 @@ export abstract class Resource {
   protected async fetchPage<T>(
     path: string,
     query: QueryParams = {},
+    signal?: AbortSignal,
   ): Promise<Page<T>> {
     const body = await this.http.request<{
       data?: T[];
       links?: PageLinks;
       meta?: PageMeta;
-    }>("GET", path, { query });
+    }>("GET", path, { query, signal });
 
     const meta = body.meta ?? EMPTY_META;
     const hasMore = meta.current_page < meta.last_page;
@@ -121,7 +122,8 @@ export abstract class Resource {
       meta,
       hasMore,
       next: hasMore
-        ? () => this.fetchPage<T>(path, { ...query, page: meta.current_page + 1 })
+        ? () =>
+            this.fetchPage<T>(path, { ...query, page: meta.current_page + 1 }, signal)
         : async () => undefined,
     };
   }

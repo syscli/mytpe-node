@@ -49,12 +49,12 @@ function toForm(input: BrandCreate | BrandUpdate): FormData {
 }
 
 export class Brands extends Resource {
-  list(params: BrandListParams = {}): Promise<Page<Brand>> {
-    return this.fetchPage<Brand>("brands", { ...params });
+  list(params: BrandListParams = {}, signal?: AbortSignal): Promise<Page<Brand>> {
+    return this.fetchPage<Brand>("brands", { ...params }, signal);
   }
 
-  paginate(params: BrandListParams = {}): AsyncGenerator<Brand> {
-    return this.iterate(this.list(params));
+  paginate(params: BrandListParams = {}, signal?: AbortSignal): AsyncGenerator<Brand> {
+    return this.iterate(this.list(params, signal));
   }
 
   create(input: BrandCreate, signal?: AbortSignal): Promise<Brand> {

@@ -44,12 +44,18 @@ function validate(input: BankAccountCreate | BankAccountUpdate): void {
 }
 
 export class BankAccounts extends Resource {
-  list(params: BankAccountListParams = {}): Promise<Page<BankAccount>> {
-    return this.fetchPage<BankAccount>("bank-accounts", { ...params });
+  list(
+    params: BankAccountListParams = {},
+    signal?: AbortSignal,
+  ): Promise<Page<BankAccount>> {
+    return this.fetchPage<BankAccount>("bank-accounts", { ...params }, signal);
   }
 
-  paginate(params: BankAccountListParams = {}): AsyncGenerator<BankAccount> {
-    return this.iterate(this.list(params));
+  paginate(
+    params: BankAccountListParams = {},
+    signal?: AbortSignal,
+  ): AsyncGenerator<BankAccount> {
+    return this.iterate(this.list(params, signal));
   }
 
   async create(input: BankAccountCreate, signal?: AbortSignal): Promise<BankAccount> {

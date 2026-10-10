@@ -144,12 +144,12 @@ function fieldPayload(input: FieldInput): Record<string, unknown> {
 }
 
 export class Forms extends Resource {
-  list(params: FormListParams = {}): Promise<Page<Form>> {
-    return this.fetchPage<Form>("forms", { ...params });
+  list(params: FormListParams = {}, signal?: AbortSignal): Promise<Page<Form>> {
+    return this.fetchPage<Form>("forms", { ...params }, signal);
   }
 
-  paginate(params: FormListParams = {}): AsyncGenerator<Form> {
-    return this.iterate(this.list(params));
+  paginate(params: FormListParams = {}, signal?: AbortSignal): AsyncGenerator<Form> {
+    return this.iterate(this.list(params, signal));
   }
 
   create(input: FormCreate, signal?: AbortSignal): Promise<Form> {
@@ -173,7 +173,11 @@ export class Forms extends Resource {
     return this.remove(`forms/${segment(id)}`, signal);
   }
 
-  async addSection(id: Uuid, input: SectionInput, signal?: AbortSignal): Promise<FormSection> {
+  async addSection(
+    id: Uuid,
+    input: SectionInput,
+    signal?: AbortSignal,
+  ): Promise<FormSection> {
     return this.post<FormSection>(
       `forms/${segment(id)}/sections`,
       sectionPayload(input),
@@ -201,7 +205,11 @@ export class Forms extends Resource {
     );
   }
 
-  async addField(id: Uuid, input: FieldInput, signal?: AbortSignal): Promise<FormField> {
+  async addField(
+    id: Uuid,
+    input: FieldInput,
+    signal?: AbortSignal,
+  ): Promise<FormField> {
     validateField(input);
     return this.post<FormField>(
       `forms/${segment(id)}/fields`,

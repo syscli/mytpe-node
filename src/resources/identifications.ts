@@ -64,12 +64,18 @@ function toForm(input: IdentificationCreate | IdentificationUpdate): FormData {
 }
 
 export class Identifications extends Resource {
-  list(params: IdentificationListParams = {}): Promise<Page<Identification>> {
-    return this.fetchPage<Identification>("identifications", { ...params });
+  list(
+    params: IdentificationListParams = {},
+    signal?: AbortSignal,
+  ): Promise<Page<Identification>> {
+    return this.fetchPage<Identification>("identifications", { ...params }, signal);
   }
 
-  paginate(params: IdentificationListParams = {}): AsyncGenerator<Identification> {
-    return this.iterate(this.list(params));
+  paginate(
+    params: IdentificationListParams = {},
+    signal?: AbortSignal,
+  ): AsyncGenerator<Identification> {
+    return this.iterate(this.list(params, signal));
   }
 
   create(input: IdentificationCreate, signal?: AbortSignal): Promise<Identification> {

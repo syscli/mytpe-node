@@ -77,12 +77,18 @@ export interface InstanceListParams {
 }
 
 export class Instances extends Resource {
-  list(params: InstanceListParams = {}): Promise<Page<PaymentInstance>> {
-    return this.fetchPage<PaymentInstance>("instances", { ...params });
+  list(
+    params: InstanceListParams = {},
+    signal?: AbortSignal,
+  ): Promise<Page<PaymentInstance>> {
+    return this.fetchPage<PaymentInstance>("instances", { ...params }, signal);
   }
 
-  paginate(params: InstanceListParams = {}): AsyncGenerator<PaymentInstance> {
-    return this.iterate(this.list(params));
+  paginate(
+    params: InstanceListParams = {},
+    signal?: AbortSignal,
+  ): AsyncGenerator<PaymentInstance> {
+    return this.iterate(this.list(params, signal));
   }
 
   /** Request activation of a new instance. Returns the licence-fee transaction. */

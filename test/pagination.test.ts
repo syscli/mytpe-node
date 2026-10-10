@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { HttpClient, type FetchLike, type HttpClientConfig } from "../src/http";
 import { AccountResource } from "../src/resources/account";
 import { Resource, type Page } from "../src/resources/base";
+import { Webhooks } from "../src/resources/webhooks";
+import { AbortError } from "../src/errors";
 
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -80,5 +82,22 @@ describe("pagination", () => {
     const seen: string[] = [];
     for await (const thing of new Things(http(fetchImpl)).all()) seen.push(thing.id);
     expect(seen).toEqual(["a", "b", "c"]);
+  });
+
+  it("carries the caller signal to later pages", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<FetchLike>(async (_url, init) => {
+      if (init?.signal?.aborted) throw init.signal.reason;
+      controller.abort();
+      return jsonResponse(listBody(1, 2, ["w1"]));
+    });
+
+    const seen: string[] = [];
+    const walk = async () => {
+      const hooks = new Webhooks(http(fetchImpl));
+      for await (const hook of hooks.paginate({}, controller.signal)) seen.push(hook.id);
+    };
+    await expect(walk()).rejects.toBeInstanceOf(AbortError);
+    expect(seen).toEqual(["w1"]);
   });
 });

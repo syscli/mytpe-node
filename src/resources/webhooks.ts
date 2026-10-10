@@ -62,12 +62,15 @@ export interface WebhookListParams {
 }
 
 export class Webhooks extends Resource {
-  list(params: WebhookListParams = {}): Promise<Page<Webhook>> {
-    return this.fetchPage<Webhook>("webhooks", { ...params });
+  list(params: WebhookListParams = {}, signal?: AbortSignal): Promise<Page<Webhook>> {
+    return this.fetchPage<Webhook>("webhooks", { ...params }, signal);
   }
 
-  paginate(params: WebhookListParams = {}): AsyncGenerator<Webhook> {
-    return this.iterate(this.list(params));
+  paginate(
+    params: WebhookListParams = {},
+    signal?: AbortSignal,
+  ): AsyncGenerator<Webhook> {
+    return this.iterate(this.list(params, signal));
   }
 
   /**
@@ -115,10 +118,12 @@ export class Webhooks extends Resource {
   async deliveries(
     id: Uuid,
     params: WebhookListParams = {},
+    signal?: AbortSignal,
   ): Promise<Page<WebhookDelivery>> {
     return this.fetchPage<WebhookDelivery>(
       `webhooks/${segment(id)}/deliveries`,
       { ...params },
+      signal,
     );
   }
 

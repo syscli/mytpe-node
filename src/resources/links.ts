@@ -115,12 +115,18 @@ function validateCreate(input: PaymentLinkCreate): void {
 }
 
 export class PaymentLinks extends Resource {
-  list(params: PaymentLinkListParams = {}): Promise<Page<PaymentLink>> {
-    return this.fetchPage<PaymentLink>("links", { ...params });
+  list(
+    params: PaymentLinkListParams = {},
+    signal?: AbortSignal,
+  ): Promise<Page<PaymentLink>> {
+    return this.fetchPage<PaymentLink>("links", { ...params }, signal);
   }
 
-  paginate(params: PaymentLinkListParams = {}): AsyncGenerator<PaymentLink> {
-    return this.iterate(this.list(params));
+  paginate(
+    params: PaymentLinkListParams = {},
+    signal?: AbortSignal,
+  ): AsyncGenerator<PaymentLink> {
+    return this.iterate(this.list(params, signal));
   }
 
   async create(input: PaymentLinkCreate, signal?: AbortSignal): Promise<PaymentLink> {
@@ -132,7 +138,11 @@ export class PaymentLinks extends Resource {
     return this.getData<PaymentLink>(`links/${segment(id)}`, undefined, signal);
   }
 
-  async update(id: Uuid, input: PaymentLinkUpdate, signal?: AbortSignal): Promise<PaymentLink> {
+  async update(
+    id: Uuid,
+    input: PaymentLinkUpdate,
+    signal?: AbortSignal,
+  ): Promise<PaymentLink> {
     return this.put<PaymentLink>(`links/${segment(id)}`, input, signal);
   }
 
