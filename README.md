@@ -8,7 +8,7 @@ webhooks that tell you when a payment lands.
 Two things make it pleasant to live with. Webhook signatures are verified for
 you, in constant time, with the replay window enforced, so you can trust an event
 before you act on it. And the file uploads that onboarding needs are handled from
-a path, a Buffer, or a Blob, without you assembling multipart bodies by hand.
+a path, raw bytes, or a Blob, without you assembling multipart bodies by hand.
 
 It is meant for servers. The key and secret authorize money movement and must
 never reach the browser.
@@ -50,7 +50,7 @@ console.log(link.slug, link.status); // share the link, watch the status
 
 Authenticate with the key and secret from your dashboard, under Settings,
 Developers, API keys. They go over the wire as `X-Api-Key` and `X-Api-Secret`.
-The secret is shown once, so store it server-side. A wrong pair returns a
+The secret is shown once, so store it server-side. A wrong pair raises an
 `AuthError`.
 
 ## Onboarding, in order
@@ -163,7 +163,7 @@ client wraps it for you, or pass a locale map to set more than one language:
 ```ts
 await mytpe.forms.addField(form.id, {
   input_name: "wilaya",
-  label: { fr: "Wilaya", ar: "الولاية" },
+  label: { fr: "Wilaya", en: "Province" },
   data_type: "string",
 });
 ```
@@ -181,12 +181,13 @@ const hook = await mytpe.webhooks.create({
 });
 // store hook.secret
 
-// In your handler, pass the raw request body, exactly as it arrived:
-app.post("/mytpe/webhook", (req, res) => {
+// In your handler, pass the raw request body, exactly as it arrived. With
+// Express, express.raw() keeps it as a Buffer:
+app.post("/mytpe/webhook", express.raw({ type: "application/json" }), (req, res) => {
   try {
     const event = mytpe.webhooks.constructEvent(
-      req.rawBody,
-      req.headers["x-mytpe-signature"],
+      req.body.toString("utf8"),
+      req.headers["x-mytpe-signature"], // a string, an array, or undefined
       storedSecret,
     );
     if (event.event === "transaction.paid") fulfil(event.data);
@@ -201,7 +202,9 @@ Pass the body untouched. Re-serializing parsed JSON changes the bytes and the
 signature will not match. `verify` returns a boolean if you would rather branch
 yourself, and the same functions are exported standalone as
 `constructWebhookEvent` and `verifyWebhookSignature` for handlers that do not
-hold a client.
+hold a client. When a header carries several `v1` hashes, as during a secret
+rotation, any one of them is accepted. An empty secret throws rather than
+quietly failing every request.
 
 ## Pagination
 
@@ -216,6 +219,9 @@ for await (const link of mytpe.links.paginate({ status: "active" })) {
   console.log(link.slug, link.total_collected);
 }
 ```
+
+Every API call takes an optional `AbortSignal` as its last argument, and a list
+passes it on to each page it fetches.
 
 ## Errors
 
@@ -238,8 +244,15 @@ try {
 ```
 
 `AuthError` (401), `ForbiddenError` (403), `NotFoundError` (404),
-`ValidationError` (422 or client-side), `BusinessError`, and `ServiceError` (5xx)
-all carry `status`, the API's `code`, and the parsed `body`.
+`ValidationError` (422 or client-side), `BusinessError` (400 or 409),
+`RequestError` (any other 4xx, such as a 429), and `ServiceError` (5xx) all
+carry `status`, the API's `code`, and the parsed `body`. A request that never
+completes raises a `NetworkError`, a `TimeoutError` past `timeoutMs`, or an
+`AbortError` when your signal fires.
+
+Reads are retried on a 5xx, a 429, a timeout, or a dropped connection, with a
+jittered backoff that honours `Retry-After` up to a minute. Writes are never
+retried, since a resend could double a charge.
 
 ## Limitations
 
@@ -256,8 +269,9 @@ all carry `status`, the API's `code`, and the parsed `body`.
 
 ```sh
 npm install
-npm test        # vitest
-npm run build   # tsup, dual ESM and CJS plus types
+npm run typecheck  # source, tests, and examples
+npm test           # vitest
+npm run build      # tsup, dual ESM and CJS plus types
 ```
 
 A small set of live tests run against the real API when `MYTPE_API_KEY` and
