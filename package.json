@@ -1,6 +1,6 @@
 {
   "name": "@syscli/mytpe",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Typed MyTPE Pay API client for Node. Payment links, terminals, forms, and webhooks for card payments in Algeria. Server-side only.",
   "type": "module",
   "license": "MIT",
