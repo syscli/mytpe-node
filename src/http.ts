@@ -3,6 +3,7 @@
 // multipart bodies, and turning a failed response into a typed error. Resources
 // call `request` and never build a URL or read the raw envelope themselves.
 
+import { VERSION } from "./version";
 import {
   AbortError,
   errorFromResponse,
@@ -128,8 +129,9 @@ function isFormData(body: unknown): body is FormData {
 }
 
 /**
- * The auth headers, plus Accept. Content-Type is set for a JSON body only;
- * for multipart it is left to fetch, which adds the boundary the server needs.
+ * The auth headers, Accept, and a User-Agent naming the SDK version.
+ * Content-Type is set for a JSON body only; for multipart it is left to fetch,
+ * which adds the boundary the server needs.
  */
 export function buildHeaders(
   config: HttpClientConfig,
@@ -139,6 +141,7 @@ export function buildHeaders(
     "X-Api-Key": config.key,
     "X-Api-Secret": config.secret,
     Accept: "application/json",
+    "User-Agent": `mytpe-node/${VERSION}`,
   };
   if (body !== undefined && !isFormData(body)) {
     headers["Content-Type"] = "application/json";

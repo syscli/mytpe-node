@@ -16,6 +16,8 @@ import {
   ServiceError,
   TimeoutError,
 } from "../src/errors";
+import { VERSION } from "../src/version";
+import pkg from "../package.json";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(body === undefined ? "" : JSON.stringify(body), {
@@ -61,6 +63,8 @@ describe("buildHeaders", () => {
     expect(h["X-Api-Key"]).toBe("k");
     expect(h["X-Api-Secret"]).toBe("s");
     expect(h["Content-Type"]).toBe("application/json");
+    expect(h["User-Agent"]).toBe(`mytpe-node/${VERSION}`);
+    expect(VERSION).toBe(pkg.version);
   });
 
   it("omits content-type for FormData so fetch sets the boundary", () => {
