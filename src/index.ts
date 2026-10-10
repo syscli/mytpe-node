@@ -21,6 +21,8 @@ export {
   BusinessError,
   ServiceError,
   NetworkError,
+  TimeoutError,
+  AbortError,
   RequestError,
   ValidationError,
   errorFromResponse,

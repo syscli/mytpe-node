@@ -6,7 +6,13 @@ import {
   type FetchLike,
   type HttpClientConfig,
 } from "../src/http";
-import { AuthError, ValidationError, ServiceError, NetworkError } from "../src/errors";
+import {
+  AbortError,
+  AuthError,
+  NetworkError,
+  ServiceError,
+  TimeoutError,
+} from "../src/errors";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(body === undefined ? "" : JSON.stringify(body), {
@@ -161,7 +167,22 @@ describe("HttpClient.request", () => {
     });
     await expect(
       client(stalled, { timeoutMs: 20, retry: { attempts: 1 } }).request("GET", "me"),
-    ).rejects.toBeInstanceOf(NetworkError);
+    ).rejects.toBeInstanceOf(TimeoutError);
+  });
+
+  it("wraps a caller abort as AbortError and does not retry it", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchImpl = vi.fn<FetchLike>(async (_url, init) => {
+      throw init!.signal!.reason;
+    });
+    const error = await client(fetchImpl)
+      .request("GET", "me", { signal: controller.signal })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(AbortError);
+    expect((error as AbortError).code).toBe("aborted");
+    expect((error as AbortError).cause).toBeDefined();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it("wraps a transport failure as NetworkError", async () => {

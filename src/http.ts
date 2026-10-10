@@ -3,7 +3,13 @@
 // multipart bodies, and turning a failed response into a typed error. Resources
 // call `request` and never build a URL or read the raw envelope themselves.
 
-import { errorFromResponse, NetworkError, ServiceError } from "./errors";
+import {
+  AbortError,
+  errorFromResponse,
+  NetworkError,
+  ServiceError,
+  TimeoutError,
+} from "./errors";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -145,9 +151,13 @@ export class HttpClient {
     const headers = buildHeaders(this.#config, options.body);
 
     const controller = new AbortController();
+    let timedOut = false;
     const timer =
       this.#config.timeoutMs > 0
-        ? setTimeout(() => controller.abort(), this.#config.timeoutMs)
+        ? setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, this.#config.timeoutMs)
         : undefined;
     if (options.signal) {
       if (options.signal.aborted) controller.abort();
@@ -169,7 +179,15 @@ export class HttpClient {
       });
       text = await response.text();
     } catch (cause) {
-      if (options.signal?.aborted) throw cause;
+      if (options.signal?.aborted) {
+        throw new AbortError("The request was aborted.", { cause });
+      }
+      if (timedOut) {
+        throw new TimeoutError(
+          `The request timed out after ${this.#config.timeoutMs} ms.`,
+          { cause },
+        );
+      }
       const reason = cause instanceof Error ? cause.message : "request failed";
       throw new NetworkError(`Could not reach the API: ${reason}.`, { cause });
     } finally {

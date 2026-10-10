@@ -7,13 +7,15 @@
 /**
  * Machine-readable error codes. The API returns its own codes, such as
  * `VALIDATION_ERROR`, `INVALID_API_CREDENTIALS`, or `WEBHOOK_NOT_FOUND`, and they
- * are kept verbatim. `network` is the one code the client adds itself, for a
- * request that never reached the server.
+ * are kept verbatim. `network`, `timeout`, and `aborted` are the codes the
+ * client adds itself, for a request that never completed.
  */
 export type MytpeErrorCode =
   | "VALIDATION_ERROR"
   | "INVALID_API_CREDENTIALS"
   | "network"
+  | "timeout"
+  | "aborted"
   | (string & {});
 
 export interface MytpeErrorOptions {
@@ -60,10 +62,28 @@ export class BusinessError extends MytpeError {}
 /** 500 or 503. The API is unavailable or erroring; safe to retry a read later. */
 export class ServiceError extends MytpeError {}
 
-/** The request never reached the server: DNS, socket, or a timeout abort. */
+/** The request never completed: DNS, socket, or a dropped connection. */
 export class NetworkError extends MytpeError {
+  constructor(
+    message: string,
+    options: MytpeErrorOptions = {},
+    code: MytpeErrorCode = "network",
+  ) {
+    super(message, code, options);
+  }
+}
+
+/** The request ran past `timeoutMs`. A NetworkError, so reads retry it. */
+export class TimeoutError extends NetworkError {
   constructor(message: string, options: MytpeErrorOptions = {}) {
-    super(message, "network", options);
+    super(message, options, "timeout");
+  }
+}
+
+/** The caller aborted the request through its AbortSignal. Never retried. */
+export class AbortError extends MytpeError {
+  constructor(message: string, options: MytpeErrorOptions = {}) {
+    super(message, "aborted", options);
   }
 }
 
