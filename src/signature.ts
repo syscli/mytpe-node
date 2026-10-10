@@ -42,24 +42,28 @@ export class WebhookVerificationError extends MytpeError {
 
 interface ParsedSignature {
   t: number;
+  /** The first v1 hash. */
   v1: string;
+  /** Every v1 hash in the header; more than one during a secret rotation. */
+  signatures: string[];
 }
 
 /** Pull the timestamp and v1 hash out of the signature header. */
 export function parseSignatureHeader(header: string): ParsedSignature | null {
   if (typeof header !== "string") return null;
   let t: number | undefined;
-  let v1: string | undefined;
+  const signatures: string[] = [];
   for (const part of header.split(",")) {
     const index = part.indexOf("=");
     if (index === -1) continue;
     const key = part.slice(0, index).trim();
     const value = part.slice(index + 1).trim();
     if (key === "t") t = Number(value);
-    else if (key === "v1") v1 = value;
+    else if (key === "v1" && value) signatures.push(value);
   }
-  if (t === undefined || !Number.isFinite(t) || !v1) return null;
-  return { t, v1 };
+  const [v1] = signatures;
+  if (t === undefined || !Number.isFinite(t) || v1 === undefined) return null;
+  return { t, v1, signatures };
 }
 
 function safeEqualHex(a: string, b: string): boolean {
@@ -80,6 +84,9 @@ export function verifyWebhookSignature(
   secret: string,
   options: VerifyOptions = {},
 ): boolean {
+  if (typeof secret !== "string" || secret === "") {
+    throw new WebhookVerificationError("A webhook signing secret is required.");
+  }
   const parsed = parseSignatureHeader(header);
   if (!parsed) return false;
 
@@ -90,7 +97,12 @@ export function verifyWebhookSignature(
   const expected = createHmac("sha256", secret)
     .update(`${parsed.t}.${rawBody}`)
     .digest("hex");
-  return safeEqualHex(parsed.v1, expected);
+  // Check every hash without stopping early, so timing does not reveal which.
+  let matched = false;
+  for (const signature of parsed.signatures) {
+    if (safeEqualHex(signature, expected)) matched = true;
+  }
+  return matched;
 }
 
 /**

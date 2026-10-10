@@ -23,7 +23,11 @@ const body = JSON.stringify({
 
 describe("parseSignatureHeader", () => {
   it("reads t and v1", () => {
-    expect(parseSignatureHeader("t=123,v1=abcdef")).toEqual({ t: 123, v1: "abcdef" });
+    expect(parseSignatureHeader("t=123,v1=abcdef")).toEqual({
+      t: 123,
+      v1: "abcdef",
+      signatures: ["abcdef"],
+    });
   });
   it("rejects junk", () => {
     expect(parseSignatureHeader("nope")).toBeNull();
@@ -53,6 +57,18 @@ describe("verifyWebhookSignature", () => {
     const old = Math.floor(NOW / 1000) - 600;
     expect(verifyWebhookSignature(body, sign(body, old), SECRET, { now: NOW })).toBe(
       false,
+    );
+  });
+
+  it("accepts any of several v1 hashes during a secret rotation", () => {
+    const good = sign(body, t).split("v1=")[1]!;
+    const header = `t=${t},v1=${"0".repeat(64)},v1=${good}`;
+    expect(verifyWebhookSignature(body, header, SECRET, { now: NOW })).toBe(true);
+  });
+
+  it("refuses to verify with an empty secret", () => {
+    expect(() => verifyWebhookSignature(body, sign(body, t, ""), "", { now: NOW })).toThrow(
+      WebhookVerificationError,
     );
   });
 
