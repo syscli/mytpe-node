@@ -8,7 +8,7 @@ import { FieldIssues } from "../validate";
 import type { FieldDataType, FormStatus, Timestamp, Uuid } from "../types";
 
 /**
- * Translatable text, keyed by locale, such as `{ fr: "Wilaya", ar: "الولاية" }`.
+ * Translatable text, keyed by locale, such as `{ fr: "Wilaya", en: "Province" }`.
  * Field labels and help text are stored this way. Where the SDK accepts a plain
  * string for convenience, it wraps it as `{ en: "..." }` before sending.
  */
