@@ -53,6 +53,13 @@ describe("Webhooks", () => {
     expect(secret).toBe("whsec_new");
   });
 
+  it("throws when regenerateSecret gets no secret back", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ message: "ok" }));
+    await expect(
+      new Webhooks(http(fetchImpl)).regenerateSecret("w1"),
+    ).rejects.toMatchObject({ code: "MISSING_SECRET" });
+  });
+
   it("deletes via a 204", async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
     await expect(new Webhooks(http(fetchImpl)).delete("w1")).resolves.toBeUndefined();

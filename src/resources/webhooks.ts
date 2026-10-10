@@ -10,6 +10,7 @@ import {
   type VerifyOptions,
   type WebhookEvent,
 } from "../signature";
+import { MytpeError } from "../errors";
 import type { Timestamp, Uuid } from "../types";
 
 export interface Webhook {
@@ -111,7 +112,14 @@ export class Webhooks extends Resource {
       `webhooks/${segment(id)}/regenerate-secret`,
       { signal },
     );
-    return body?.secret ?? "";
+    if (typeof body?.secret !== "string" || body.secret === "") {
+      throw new MytpeError(
+        "The API did not return a new webhook secret.",
+        "MISSING_SECRET",
+        { body },
+      );
+    }
+    return body.secret;
   }
 
   /** The delivery attempts for a webhook, newest first. */
